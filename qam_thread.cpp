@@ -19,6 +19,8 @@
 #include "atomic_vars.h"
 #include "statistics.h"
 #include <median_window_filter.h>
+#include "qam_decoder/HS_EWL_LineEqualizer.h"
+#include "qam_decoder/HS_EWL_LineEqualizer_terminate.h"
 
 /* Extern global variables */
 extern RingBuffer *m_ring;              // ring data buffer (ADC data) for QAM decoder
@@ -56,7 +58,24 @@ int byte_data_size;
 
 double qam_symbols_real[525];
 double qam_symbols_imag[525];
+creal_T qam_symbols[525];
+creal_T one_ref_buf[525];
+creal_T qam_symbols_ref[525];
+creal_T equalized_data[525];
+creal_T chan_resp[13];
+creal_T chan_resp_corrected[13] = {{0, 0},{0, 0},{0, 0},{1, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0}};;
+uint8_t* pointer_to_equalized_byte;
+uint8_t test_byte_array[469] = {0};
+uint8_t crc8_check;
 double start_inf_data;
+creal_T ref_channel_response[13] = {{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0}};
+boolean_T equal_flag = 0;
+uint8_t equal_cnt = 0;
+boolean_T equalizer_adapted = false;
+uint8_T correct_crc_cnt = 0;
+creal_T qam_symbols_valid_last[525];
+creal_T qam_symbols_ref_valid_last[525];
+double rms[2] = {0, 0};
 
 #define DATA_DECODED_SIZE           (128*1024)
 #define N_DATA_DECODED_BUFFERS      20
@@ -210,8 +229,8 @@ void QamThread::QAM_Decoder()
 
     if(HS_EWL_FREQ_ACQ_error_status == 0)
     {
-        HS_EWL_DEMOD_QAM_error_status = HS_EWL_DEMOD_QAM(data, len_data, f_est_data, Fs, &qam_str, qam_symbols_real,
-                    qam_symbols_imag, byte_data, &start_inf_data);
+        HS_EWL_DEMOD_QAM_error_status = HS_EWL_DEMOD_QAM(data, len_data, f_est_data, Fs, &qam_str, qam_symbols,
+                    byte_data, &start_inf_data, qam_symbols_ref, chan_resp_corrected);
 
         switch(HS_EWL_DEMOD_QAM_error_status)
         {
@@ -232,6 +251,8 @@ void QamThread::QAM_Decoder()
         for(uint16_t i = 0; i < TxPacketRsCodesSize + TxPacketDataSize; ++i)
             frame_decoded[i] = (uint8_t)byte_data[i];
 
+        memcpy(qam_symbols_decoded, qam_symbols, sizeof(creal_T)*525);
+        memcpy(qam_symbols_decoded_ref, qam_symbols_ref, sizeof(creal_T)*525);
         // Parse 'frame' tail
         frame_tail_nlast_t *tail = (frame_tail_nlast_t*)&frame_decoded[TxPacketRsCodesSize + TxPacketDataSize - sizeof(frame_tail_nlast_t)];
 
@@ -315,6 +336,67 @@ void QamThread::QAM_Decoder()
 
         if(crc8 == tail->crc8)
         {
+            equal_cnt++;
+            if(!equalizer_adapted)
+            {
+                if(equal_cnt >=50)
+                {
+                    equalizer_adapted = true;
+                    equal_cnt = 0;
+                }
+
+                if(rs_decode_flag[0] != -1 || rs_decode_flag[1] != -1)
+                {
+                    if(qam_str.order == 256)
+                        qam256_modulator(frame_decoded, qam_str.inf_byte_amount, qam_symbols_decoded_ref);
+                    else
+                        qam64_modulator(frame_decoded, (int)(((float)qam_str.inf_byte_amount*8.0)/log2(qam_str.order)), qam_symbols_decoded_ref);
+                }
+
+                HS_EWL_LineEqualizer(qam_symbols_decoded, (int)(((float)qam_str.inf_byte_amount*8.0)/log2(qam_str.order)) + 3, qam_symbols_decoded_ref, true, equalized_data, chan_resp);
+                if(qam_str.order == 256)
+                    pointer_to_equalized_byte = qam_256_demodulator(&equalized_data[3], qam_str.inf_byte_amount, 1, 0);
+                else
+                    pointer_to_equalized_byte = qam_64_demodulator(&equalized_data[3], (int)(((float)qam_str.inf_byte_amount*8.0)/log2(qam_str.order)) + 3, 1, 0);
+                crc8_check = calc_crc8(pointer_to_equalized_byte + TxPacketRsCodesSize, TxPacketDataSize - 1);
+                if(crc8_check == tail->crc8)
+                    correct_crc_cnt++;
+                else
+                    correct_crc_cnt = 0;
+
+                if(correct_crc_cnt == 5)
+                {
+                    equalizer_adapted = true;
+                    equal_cnt = 0;
+                }
+            }
+            else
+            {
+                if(equal_cnt >= 53)
+                {
+                    equal_cnt = 0;
+                    if(rs_decode_flag[0] != -1 || rs_decode_flag[1] != -1)
+                    {
+                        if(qam_str.order == 256)
+                            qam256_modulator(frame_decoded, qam_str.inf_byte_amount, qam_symbols_decoded_ref);
+                        else
+                            qam64_modulator(frame_decoded, (int)(((float)qam_str.inf_byte_amount*8.0)/log2(qam_str.order)), qam_symbols_decoded_ref);
+                    }
+                    HS_EWL_LineEqualizer(qam_symbols_decoded, (int)(((float)qam_str.inf_byte_amount*8.0)/log2(qam_str.order)) + 3, qam_symbols_decoded_ref, true, equalized_data, chan_resp);
+                    if(qam_str.order == 256)
+                        pointer_to_equalized_byte = qam_256_demodulator(&equalized_data[3], qam_str.inf_byte_amount, 1, 0);
+                    else
+                        pointer_to_equalized_byte = qam_64_demodulator(&equalized_data[3], (int)(((float)qam_str.inf_byte_amount*8.0)/log2(qam_str.order)) + 3, 1, 0);
+                    crc8_check = calc_crc8(pointer_to_equalized_byte + TxPacketRsCodesSize, TxPacketDataSize - 1);
+                    if(crc8_check == tail->crc8)
+                    {
+                        memcpy(chan_resp_corrected,chan_resp,sizeof(creal_T)*13);
+                        log_str2.append("Filter coeffitients update______________________________________________\n");
+                        emit consoleFilterCoeffDataFile(chan_resp_corrected, 13, equal_flag);
+                    }
+
+                }
+            }
             crc_statistics_good_crc_received();
 
             crc_error = false;
@@ -444,7 +526,6 @@ void QamThread::QAM_Decoder()
             log_str2.append("warning_status = 4: error probably wrong f_est\n");
             break;
     };
-
 
     // Save 'error-frames' to file
     if(crc_error || warning_status != CORRECT)

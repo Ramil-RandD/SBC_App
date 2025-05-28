@@ -21,6 +21,8 @@ namespace coder
     double maximum(const double x[57820]);
     void maximum(const double x[58820], double *ex, int *idx);
     void minimum(const double x[50], double *ex, int *idx);
+
+    void minimum_for_equalizer(const double x[256], double *ex, int *idx);
   }
 }
 

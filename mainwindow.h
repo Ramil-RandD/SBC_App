@@ -112,6 +112,8 @@ private slots:
     void consolePutData(const QString &data, quint8 priority);
     void consoleAdcData(const quint8 *p_data, quint32 size);
     void consoleDataAdcSpecial(const qint16 *p_data, quint32 len, quint8 type);
+    void consoleDataEqualizFilter(const creal_T *p_data, const creal_T *eql_data, quint32 len, quint8 flag);
+    void consoleFilterCoeff(const creal_T *p_data, quint32 len, quint8 flag);
     void timeoutSerialPortReconnect();
     void timeoutUsbInitCallback();
     void timeoutGpioCallback();
