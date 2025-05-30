@@ -68,12 +68,13 @@ uint8_t* pointer_to_equalized_byte;
 uint8_t test_byte_array[469] = {0};
 uint8_t crc8_check;
 double start_inf_data;
-creal_T ref_channel_response[13] = {{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0}};
-boolean_T equal_flag = 0;
+creal_T backup_channel_response[13] = {{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0}};
+boolean_T crc_error_flag = false;
 uint8_t equal_cnt = 0;
 boolean_T equalizer_adapted = false;
+boolean_T update_impalse_char = false;
 uint8_T correct_crc_cnt = 0;
-creal_T qam_symbols_valid_last[525];
+creal_T qam_symbols_equalized[525];
 creal_T qam_symbols_ref_valid_last[525];
 double rms[2] = {0, 0};
 
@@ -337,6 +338,7 @@ void QamThread::QAM_Decoder()
         if(crc8 == tail->crc8)
         {
             equal_cnt++;
+            LineEqualizer_crc_cnt_reset();
             if(!equalizer_adapted)
             {
                 if(equal_cnt >=50)
@@ -388,12 +390,24 @@ void QamThread::QAM_Decoder()
                     else
                         pointer_to_equalized_byte = qam_64_demodulator(&equalized_data[3], (int)(((float)qam_str.inf_byte_amount*8.0)/log2(qam_str.order)) + 3, 1, 0);
                     crc8_check = calc_crc8(pointer_to_equalized_byte + TxPacketRsCodesSize, TxPacketDataSize - 1);
-                    if(crc8_check == tail->crc8)
+
+                    fir_filter(qam_symbols_decoded, qam_str.inf_byte_amount + 3, chan_resp, equalized_data);
+                    fir_filter(qam_symbols_decoded, qam_str.inf_byte_amount + 3, chan_resp_corrected, qam_symbols_equalized);
+
+                    update_impalse_char = LineEqualizer_qam_diagram_distance_check(&equalized_data[3], &qam_symbols_equalized[3], qam_symbols_decoded_ref);
+
+
+                    if(crc8_check == tail->crc8 && update_impalse_char)
                     {
+                        memcpy(backup_channel_response,chan_resp_corrected,sizeof(creal_T)*13);
                         memcpy(chan_resp_corrected,chan_resp,sizeof(creal_T)*13);
                         log_str2.append("Filter coeffitients update______________________________________________\n");
-                        emit consoleFilterCoeffDataFile(chan_resp_corrected, 13, equal_flag);
+                        emit consoleFilterCoeffDataFile(chan_resp_corrected, 13, 1);
                     }
+
+                }
+                else
+                {
 
                 }
             }
@@ -462,6 +476,9 @@ void QamThread::QAM_Decoder()
 
         if(crc8 != tail->crc8)
         {
+            crc_error_flag = LineEqualizer_is_error_sequence_of_CRC();
+            if(crc_error_flag)
+                memcpy(chan_resp_corrected,backup_channel_response,sizeof(creal_T)*13);
             crc_statistics_bad_crc_received();
             log_str2.append("CRC error, rs decoder failed to correct data\n");
         }

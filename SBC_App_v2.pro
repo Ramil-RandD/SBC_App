@@ -21,6 +21,10 @@ SOURCES += \
     median_window_filter.cpp \
     message_box.cpp \
     mod_transmitter_thread.cpp \
+    qam_decoder/HS_EWL_LineEqualizer.cpp \
+    qam_decoder/HS_EWL_LineEqualizer_data.cpp \
+    qam_decoder/HS_EWL_LineEqualizer_initialize.cpp \
+    qam_decoder/HS_EWL_LineEqualizer_terminate.cpp \
     qam_decoder/eml_fftshift.cpp \
     qam_decoder/fft.cpp \
     qam_decoder/FFTImplementationCallback.cpp \

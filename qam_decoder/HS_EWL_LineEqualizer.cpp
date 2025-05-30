@@ -60,6 +60,7 @@ typedef struct {
 /* Variable Definitions */
 static comm_LinearEqualizer LineEqualizerStr;
 static boolean_T LineEqualizerStr_not_empty;
+static uint8_T LineEqualizer_crc_cnt = 0;
 
 /* Function Declarations */
 static double rt_hypotd_snf(double u0, double u1);
@@ -1462,6 +1463,41 @@ void HS_EWL_LineEqualizer(const creal_T *input_buf, uint32_T buf_size, const cre
 void HS_EWL_LineEqualizer_init(void)
 {
     LineEqualizerStr_not_empty = false;
+}
+
+void LineEqualizer_crc_cnt_reset()
+{
+    LineEqualizer_crc_cnt = 0;
+}
+
+boolean_T LineEqualizer_is_error_sequence_of_CRC()
+{
+    LineEqualizer_crc_cnt++;
+    if(LineEqualizer_crc_cnt < ERROR_CRC_THRESHOLD)
+        return false;
+    else
+        return true;
+}
+
+boolean_T LineEqualizer_qam_diagram_distance_check(creal_T* buf1, creal_T* buf2, creal_T* ref_buf)
+{
+    double distance[2] = {0};
+    int16_T distance_cnt[2] = {0};
+    for(int i = 0; i < 256; i++)
+    {
+        distance[0] = sqrt(pow(ref_buf[i].re - buf1[i].re,2) + pow(ref_buf[i].im - buf1[i].im,2));
+        distance[1] = sqrt(pow(ref_buf[i].re - buf2[i].re,2) + pow(ref_buf[i].im - buf2[i].im,2));
+
+        if(distance[0] > distance[1])
+            distance_cnt[0]++;
+        else
+            distance_cnt[1]++;
+    }
+
+    if(distance_cnt[0] - 50 > distance_cnt[1])
+        return 0; // don't update impulse responce
+    else
+        return 1; // update impulse responce
 }
 
 /*
