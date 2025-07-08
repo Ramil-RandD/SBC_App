@@ -68,7 +68,7 @@ uint8_t* pointer_to_equalized_byte;
 uint8_t test_byte_array[469] = {0};
 uint8_t crc8_check;
 double start_inf_data;
-creal_T backup_channel_response[13] = {{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0}};
+creal_T backup_channel_response[13] = {{0, 0},{0, 0},{0, 0},{1, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0},{0, 0}};
 boolean_T crc_error_flag = false;
 uint8_t equal_cnt = 0;
 int qam_symbols_num = 0;
@@ -183,6 +183,10 @@ void QamThread::setFirstPassFlag()
     mutex.lock();
     emit consolePutData(QString("Filter f0: reset filter\n"), 1);
     m_QamDecoderFirstPassFlag = true;
+    memset(chan_resp_corrected, 0.0, sizeof(creal_T)*13);
+    memset(backup_channel_response, 0.0, sizeof(creal_T)*13);
+    chan_resp_corrected[3].re       = 1.0;
+    backup_channel_response[3].re   = 1.0;
     mutex.unlock();
 }
 
