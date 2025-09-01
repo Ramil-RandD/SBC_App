@@ -761,8 +761,6 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
     //double dist_between_2point(creal_T point1, creal_T point2, creal_T norm_coeff)
     double     pre_from;
     int32_T     pre_to;
-    int         i           = 0;
-    boolean_T   exitg1      = false;
 
     if (rt_roundd_snf(len / sps) < (qam_str->qam_sym_per_frame - 10))
     {
@@ -781,11 +779,11 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
     if ((!(pre_from < 0)) && (!(pre_from > 50.0 * sps))) {
       int32_T bounds1new;
       int32_T bounds2new;
-      double re_tmp;
       double signal_max;
       int b_i;
 
       signal_max = find_preamble_max(data, pre_from, sps, Pl);
+      //resamp_len = lagrange_reamp(s2, len_data, testSignal, f_opt, Fs, sps);
 
       // find preamble end
       pre_to = pre_from + sps * (qam_str->qam_sym_per_frame - 2.0);
@@ -880,7 +878,15 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
 //            }
             pre_from = dist_between_2point(filt2pream[startPream], filt2pream[endPream - 1], norm_coef);
 
-            sa = find_norm_coeff_for_freq(b_dv, b_dv1, pre_from);
+            if(qam_str->order == 4)
+            {
+                sa = qam4_qpsk_find_norm_coeff_for_freq(b_dv, b_dv1, pre_from);
+            }
+            else
+            {
+                sa = find_norm_coeff_for_freq(b_dv, b_dv1, pre_from);
+            }
+
             //find_norm_coeff_for_freq(const *double dist_table, const *double freq_table, double distance);
 //            sa = 0.0;
 //            i = 0;
@@ -1060,6 +1066,25 @@ double find_norm_coeff_for_freq(const double *dist_table, const double *freq_tab
         if (dist_table[i] <= distance)
         {
             norm_freq = freq_table[i];
+            exitg1 = true;
+        }
+        else
+        {
+            i++;
+        }
+    }
+    return norm_freq;
+}
+double qam4_qpsk_find_norm_coeff_for_freq(const double *dist_table, const double *freq_table, double distance)
+{
+    double      norm_freq = 0.0;
+    int         i = 0;
+    boolean_T   exitg1 = false;
+    while ((!exitg1) && (i < 31))
+    {
+        if (dist_table[i] <= distance)
+        {
+            norm_freq = i - 15;//freq_table[i];
             exitg1 = true;
         }
         else

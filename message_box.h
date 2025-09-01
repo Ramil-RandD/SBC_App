@@ -88,6 +88,8 @@ public:
     static const uint8_t SET_SHIFT_QAM_DATA = 0xE2;
 
     static const uint8_t STATUS                = 0x5C;	//	статус прибора
+    static const uint8_t MOD_AUTO_CFG_START    = 0xE5;	//	start agc alghorithm on MOD2
+    static const uint8_t MOD_AUTO_CFG_STOP     = 0xE6;	//	stop agc alghorithm on MOD2
 
 protected:
 

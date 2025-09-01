@@ -34,7 +34,7 @@ static int16_t FrameErrorAdcBuffer[10][USB_MAX_DATA_SIZE];
 //double Fs = 1832061;//280000;//ADC sample rate
 //extern double f_opt;
 double f0 = 35045;          //carrier freq
-double f0_saved = 35045;    //carrier freq saved for blackbox usage
+double f0_saved = 17523;//35045;    //carrier freq saved for blackbox usage
 double sps = round(Fs/f0);  //sample per spreamble_lenymbol
 double mode = 0;            //1-both stages enabled, 0-only sevond stage
 
@@ -219,10 +219,10 @@ void QamThread::QAM_Decoder()
 
     if(qam_str.order == 4)
     {
-        resamp_qpsk_len = lagrange_reamp(signal, &resamp_qpsk_len, resamp_qpsk_signal, 229007.625, 139941, 4);
+        resamp_qpsk_len = lagrange_reamp(signal, &resamp_qpsk_len, resamp_qpsk_signal, Fs, Fs*2, 1);
         signal = resamp_qpsk_signal;
         len = (double)resamp_qpsk_len;
-        f0 = 17500;
+        f0 = 17510;
         sps = 52;
     }
 

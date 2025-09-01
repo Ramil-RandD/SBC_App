@@ -3,6 +3,7 @@
 #include <QElapsedTimer>
 
 #include "crc16.h"
+#include "crc8.h"
 #include "srp_mod_protocol.h"
 #include "../SRP_HS_USB_PROTOCOL/SRP_HS_USB_Protocol.h"
 #include "ringbuffer.h"
@@ -21,6 +22,11 @@ extern float phase_resamp_data[128];
 extern uint16_t shift_for_qam_data_int;
 
 extern RingBuffer *m_ring;
+
+extern bool is_auto_config_work;
+extern bool mod2_auto_cfg_start_answer;
+extern bool mod2_auto_cfg_stop_answer;
+extern bool mod2_set_rx_parameters_answer;
 
 ModTransmitterThread::ModTransmitterThread(QObject *parent) :
     QThread(parent)
@@ -62,6 +68,9 @@ void ModTransmitterThread::run()
             case ERROR_AGC_SWEEP:
             case ERROR_FREQ_ESTIMATE_TIMEOUT:
             case ERROR_AGC_SIN35KHZ:
+            case ERROR_MOD2_AUTO_CFG_START:
+            case ERROR_MOD2_AUTO_CFG_STOP:
+            case ERROR_MOD2_SEND_RX_PARAMETERS:
                 m_mutex_mod.unlock();
                 continue;
 
@@ -70,16 +79,48 @@ void ModTransmitterThread::run()
                 emit consolePutData(":: Predistortion auto cfg :: disable QAM decoder ring buffer'\n", 2);
                 m_ring->SetActive(false);
 
-                // Send 'AGC start' to STM32
-                emit consolePutData(":: Predistortion auto cfg :: send 'AGC start'\n", 2);
-                emit sendCommandToSTM32(USB_CMD_AGC_START, nullptr, 0);
+                is_auto_config_work = true;
 
-                // Delay
-                QThread::msleep(100);
+                if(mod2_auto_cfg_start_answer == false)
+                {
+                    if(n_commands > n_MaxMod2AutoCfgCommands)
+                    {
+                        emit consolePutData(":: Predistortion auto cfg :: send cmd to mod2 'MOD_AUTO_CFG_START' error: too many 'MOD_AUTO_CFG_START' commands transmitted to MOD and MOD not answered\n", 2);
+                        setState(ERROR_MOD2_AUTO_CFG_START);
+                        n_commands = 0;
+                        calculatePredistortionTablesStop();
+                        break;
+                    }
+                    message.command = CMessageBox::MOD_AUTO_CFG_START;
+                    message.packet_adr = 0;
+                    message.data_len = 0;
+                    message.message_id = 0;//0;
+                    message.master_address = CMessageBox::MOD2_ADDR;
+                    message.own_address = CMessageBox::MASTER_ADDR;
 
-                setState(SIN35KHZ_MOD_COMMANDS_FOR_AGC);
-                n_commands = 0;
-                AgcStateGlobal = AGC_START;
+                    uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
+                    emit consolePutData(":: Predistortion auto cfg :: Send 'MOD_AUTO_CFG_START' command to MOD2\n", 2);
+                    postDataToStm32H7(message_box_buffer_mod, tx_len);
+                    n_commands++;
+
+                        // Start timeout before next command
+                    emit startAnswerTimeoutTimer(timeoutAnswer_ms);
+                    break;
+                }
+                else
+                {
+                    mod2_auto_cfg_start_answer = false;
+                    // Send 'AGC start' to STM32
+                    emit consolePutData(":: Predistortion auto cfg :: send 'AGC start'\n", 2);
+                    emit sendCommandToSTM32(USB_CMD_AGC_START, nullptr, 0);
+
+                    // Delay
+                    QThread::msleep(100);
+
+                    setState(SIN35KHZ_MOD_COMMANDS_FOR_AGC);
+                    n_commands = 0;
+                    AgcStateGlobal = AGC_START;
+                }
                 /* fallthrough */
 
             case SIN35KHZ_MOD_COMMANDS_FOR_AGC:
@@ -114,14 +155,18 @@ void ModTransmitterThread::run()
                             break;
                         }
 
-                        message.command = CMessageBox::SEND_SIN_35KHZ;
-                        message.packet_adr = 0;
-                        message.data_len = 0;
-                        message.message_id = 3;//0;
-                        message.master_address = CMessageBox::MOD2_ADDR;
-                        message.own_address = CMessageBox::MASTER_ADDR;
+                        //message.command = CMessageBox::SEND_SIN_35KHZ;
+                        //message.packet_adr = 0;
+                        //message.data_len = 0;
+                        //message.message_id = 3;//0;
+                        //message.master_address = CMessageBox::MOD2_ADDR;
+                        //message.own_address = CMessageBox::MASTER_ADDR;
+                        message_box_buffer_mod[0] = CMessageBox::MOD2_ADDR;
+                        message_box_buffer_mod[1] = CMessageBox::MASTER_ADDR;
+                        message_box_buffer_mod[2] = CMessageBox::SEND_SIN_35KHZ;
+                        //message_box_buffer_mod[3] = calc_crc8(message_box_buffer_mod, 3);
 
-                        uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
+                        uint16_t tx_len = 3;//CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
                         emit consolePutData(QString(":: Predistortion auto cfg :: Send 'SEND_SIN_35KHZ' command to MOD #%1 of max #%2\n").arg(n_commands).arg(n_MaxSin35kHzCommands), 2);
                         postDataToStm32H7(message_box_buffer_mod, tx_len);
 
@@ -167,14 +212,21 @@ void ModTransmitterThread::run()
                 emit consolePutData(QString(":: Predistortion auto cfg :: Send 'SEND_SIN_35KHZ_600' command to MOD\n"), 2);
                 FreqEstState = TFreqEstState::FREQ_EST_START;
 
-                message.command = CMessageBox::SEND_SIN_35KHZ_600;
-                message.packet_adr = 0;
-                message.data_len = 0;
-                message.message_id = 0;
-                message.master_address = CMessageBox::MOD2_ADDR;
-                message.own_address = CMessageBox::MASTER_ADDR;
+                //message.command = CMessageBox::SEND_SIN_35KHZ_600;
+                //message.packet_adr = 0;
+                //message.data_len = 0;
+                //message.message_id = 0;
+                //message.master_address = CMessageBox::MOD2_ADDR;
+                //message.own_address = CMessageBox::MASTER_ADDR;
 
-                uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
+                message_box_buffer_mod[0] = CMessageBox::MOD2_ADDR;
+                message_box_buffer_mod[1] = CMessageBox::MASTER_ADDR;
+                message_box_buffer_mod[2] = CMessageBox::SEND_SIN_35KHZ_600;
+                //message_box_buffer_mod[3] = calc_crc8(message_box_buffer_mod, 3);
+
+                uint16_t tx_len = 3;//CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
+
+                //uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
                 postDataToStm32H7(message_box_buffer_mod, tx_len);
 
                 // Wait for freq estimate
@@ -187,7 +239,7 @@ void ModTransmitterThread::run()
                 Timeout = 0;
 
                 // Start timeout to check 'frequency estimate' function completion
-                emit startAnswerTimeoutTimer(100);
+                emit startAnswerTimeoutTimer(500);
             }
                 break;
 
@@ -249,14 +301,21 @@ void ModTransmitterThread::run()
                             break;
                         }
 
-                        message.command = CMessageBox::SEND_SWEEP_SIGNAL;
-                        message.packet_adr = 0;
-                        message.data_len = 0;
-                        message.message_id = 0;
-                        message.master_address = CMessageBox::MOD2_ADDR;
-                        message.own_address = CMessageBox::MASTER_ADDR;
+                        //message.command = CMessageBox::SEND_SWEEP_SIGNAL;
+                        //message.packet_adr = 0;
+                        //message.data_len = 0;
+                        //message.message_id = 0;
+                        //message.master_address = CMessageBox::MOD2_ADDR;
+                        //message.own_address = CMessageBox::MASTER_ADDR;
 
-                        uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
+                        message_box_buffer_mod[0] = CMessageBox::MOD2_ADDR;
+                        message_box_buffer_mod[1] = CMessageBox::MASTER_ADDR;
+                        message_box_buffer_mod[2] = CMessageBox::SEND_SWEEP_SIGNAL;
+                        //message_box_buffer_mod[3] = calc_crc8(message_box_buffer_mod, 3);
+
+                        uint16_t tx_len = 3;
+
+                        //uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
                         emit consolePutData(QString(":: Predistortion auto cfg :: Send 'SEND_SWEEP_SIGNAL' command to MOD #%1 of max #%2\n").arg(n_commands).arg(n_MaxSweepCommands), 2);
                         postDataToStm32H7(message_box_buffer_mod, tx_len);
 
@@ -292,14 +351,21 @@ void ModTransmitterThread::run()
                 {
                     SweepState = TSweepState::SWEEP_START;
 
-                    message.command = CMessageBox::SEND_SWEEP_SIGNAL;
-                    message.packet_adr = 0;
-                    message.data_len = 0;
-                    message.message_id = 0;
-                    message.master_address = CMessageBox::MOD2_ADDR;
-                    message.own_address = CMessageBox::MASTER_ADDR;
+                    //message.command = CMessageBox::SEND_SWEEP_SIGNAL;
+                    //message.packet_adr = 0;
+                    //message.data_len = 0;
+                    //message.message_id = 0;
+                    //message.master_address = CMessageBox::MOD2_ADDR;
+                    //message.own_address = CMessageBox::MASTER_ADDR;
 
-                    uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
+                    message_box_buffer_mod[0] = CMessageBox::MOD2_ADDR;
+                    message_box_buffer_mod[1] = CMessageBox::MASTER_ADDR;
+                    message_box_buffer_mod[2] = CMessageBox::SEND_SWEEP_SIGNAL;
+                    //message_box_buffer_mod[3] = calc_crc8(message_box_buffer_mod, 3);
+
+                    uint16_t tx_len = 3;
+
+                    //uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
                     emit consolePutData(QString(":: Predistortion auto cfg :: Send 'SEND_SWEEP_SIGNAL' command to MOD\n"), 2);
                     postDataToStm32H7(message_box_buffer_mod, tx_len);
 
@@ -313,7 +379,7 @@ void ModTransmitterThread::run()
                     Timeout = 0;
 
                     // Start timeout to check 'sweep' function completion
-                    emit startAnswerTimeoutTimer(100);
+                    emit startAnswerTimeoutTimer(500);
                 }
                 /* fallthrough */
 
@@ -424,14 +490,20 @@ void ModTransmitterThread::run()
                             break;
                         }
 
-                        message.command = CMessageBox::STATUS;
-                        message.packet_adr = 0;
-                        message.data_len = 0;
-                        message.message_id = 0;
-                        message.master_address = CMessageBox::MOD2_ADDR;
-                        message.own_address = CMessageBox::MASTER_ADDR;
+                        //message.command = CMessageBox::STATUS;
+                        //message.packet_adr = 0;
+                        //message.data_len = 0;
+                        //message.message_id = 0;
+                        //message.master_address = CMessageBox::MOD2_ADDR;
+                        //message.own_address = CMessageBox::MASTER_ADDR;
+                        message_box_buffer_mod[0] = CMessageBox::MOD2_ADDR;
+                        message_box_buffer_mod[1] = CMessageBox::MASTER_ADDR;
+                        message_box_buffer_mod[2] = CMessageBox::STATUS;
+                        //message_box_buffer_mod[3] = calc_crc8(message_box_buffer_mod, 3);
 
-                        uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
+                        uint16_t tx_len = 3;
+
+                        //uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
                         emit consolePutData(QString(":: Predistortion auto cfg :: Send 'GET STATUS' command to MOD #%1 of max #%2\n").arg(n_commands).arg(n_MaxModStatusCommands), 2);
                         postDataToStm32H7(message_box_buffer_mod, tx_len);
 
@@ -443,15 +515,87 @@ void ModTransmitterThread::run()
                     emit consolePutData(":: Predistortion auto cfg :: AGC for 'GET STATUS' configured, state AGC_OK\n", 2);
 
                     // Finishing
-                    setState(AUTOCFG_COMPLETE_SUCCESSFULLY);
+                    //setState(AUTOCFG_COMPLETE_SUCCESSFULLY);
+                    n_commands = 0;
+                    setState(SEND_TO_MOD2_RX_PARAMETERS);
                     emit startAnswerTimeoutTimer(100);
                 }
                 break;
 
+             case SEND_TO_MOD2_RX_PARAMETERS:
+                    // Send 'AGC start' to STM32
+                    if(hs_data_received == false)
+                    {
+                        if(n_commands > n_MaxMod2AutoCfgCommands)
+                        {
+                            emit consolePutData(":: Predistortion auto cfg :: tx cmd to mod2 'SEND_TO_MOD2_RX_PARAMETERS' error: too many 'MOD_AUTO_CFG_START' commands transmitted to MOD and MOD not answered\n", 2);
+                            setState(ERROR_MOD2_SEND_RX_PARAMETERS);
+                            calculatePredistortionTablesStop();
+                            break;
+                        }
+
+                        // Send 'AGC start' to STM32
+                        emit consolePutData(":: Predistortion auto cfg :: send 'SET RX PARAMETERS' to MOD2\n", 2);
+                        emit sendCommandToSTM32(USB_CMD_SET_RX_PARAMETRS_FOR_MOD, nullptr, 0);
+
+                        n_commands++;
+
+                        // Start timeout before next command
+                        emit startAnswerTimeoutTimer(5000);//timeoutAnswer_ms);
+                        break;
+                    }
+                    else
+                    {
+                        hs_data_received = false;
+                        n_commands = 0;
+                        mod2_set_rx_parameters_answer = false;
+                        emit consolePutData(":: Predistortion auto cfg :: new rx parameters upload to MOD2\n", 2);
+                        setState(AUTOCFG_COMPLETE_SUCCESSFULLY);
+                        //break;
+                    }
+                    /* fallthrough */
+             //case STAT_SRP_COMMANDS_FOR_AGC:
+
+
              case AUTOCFG_COMPLETE_SUCCESSFULLY:
-                emit consolePutData(":: Predistortion auto cfg :: auto configuration complete, all operations completed successfully\n", 2);
-                calculatePredistortionTablesStop();
-                break;
+
+                if(hs_data_received == false)
+                {
+                    if(n_commands > n_MaxMod2AutoCfgCommands)
+                    {
+                        emit consolePutData(":: Predistortion auto cfg :: send cmd to mod2 'MOD_AUTO_CFG_STOP' error: too many 'MOD_AUTO_CFG_STOP' commands transmitted to MOD and MOD not answered\n", 2);
+                        setState(ERROR_MOD2_AUTO_CFG_STOP);
+                        n_commands = 0;
+                        calculatePredistortionTablesStop();
+                        break;
+                    }
+                    //message.command = CMessageBox::MOD_AUTO_CFG_STOP;
+                    //message.packet_adr = 0;
+                    //message.data_len = 0;
+                    //message.message_id = 0;//0;
+                    //message.master_address = CMessageBox::MOD2_ADDR;
+                    //message.own_address = CMessageBox::MASTER_ADDR;
+                    message_box_buffer_mod[0] = CMessageBox::MOD2_ADDR;
+                    message_box_buffer_mod[1] = CMessageBox::MASTER_ADDR;
+                    message_box_buffer_mod[2] = CMessageBox::MOD_AUTO_CFG_STOP;
+
+                    uint16_t tx_len = 3;
+                    //uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
+                    emit consolePutData(":: Predistortion auto cfg :: Send 'MOD_AUTO_CFG_STOP' command to MOD2\n", 2);
+                    postDataToStm32H7(message_box_buffer_mod, tx_len);
+                    n_commands++;
+
+                        // Start timeout before next command
+                    emit startAnswerTimeoutTimer(timeoutAnswer_ms);
+                    break;
+                }
+                else
+                {
+                    hs_data_received = false;
+                    emit consolePutData(":: Predistortion auto cfg :: auto configuration complete, all operations completed successfully\n", 2);
+                    calculatePredistortionTablesStop();
+                    break;
+                }
 
             //====================================================================================================================
 
@@ -659,6 +803,9 @@ void ModTransmitterThread::transmitPredistortionTables()
                 emit consolePutData(":: Predistortion auto cfg :: Mod predistortion tables and 'shift + crc' transmission completed\n", 2);
                 StatePredistTx = TX_FINISHED;
 
+                emit consolePutData(":: Predistortion auto cfg :: send 'AGC stop'\n", 2);
+                emit sendCommandToSTM32(USB_CMD_AGC_STOP, nullptr, 0);
+
                 // Start AGC for final configuration
                 setState(AGC_START_FOR_MOD_STAT);
 
@@ -767,7 +914,6 @@ void ModTransmitterThread::timeoutAnswer()
             hs_data_received = false;
         }
     }
-
     m_mutex_mod.unlock();
 
     // Get back to thread run()
@@ -885,5 +1031,6 @@ void ModTransmitterThread::calculatePredistortionTablesStop()
     // QAM decoder set first pass flag
     emit qamDecoderReset();
 
+    is_auto_config_work = false;
     m_AutoConfigurationMode = false;
 }

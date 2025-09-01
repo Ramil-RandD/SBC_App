@@ -72,6 +72,11 @@ QMutex m_freqValMutex;
 
 QElapsedTimer profiler_timer;       // debug timer for time measurements
 
+bool is_auto_config_work = false;
+bool mod2_auto_cfg_start_answer = false;
+bool mod2_auto_cfg_stop_answer = false;
+bool mod2_set_rx_parameters_answer = false;
+
 int main(int argc, char *argv[])
 {
     // Init SRP variables

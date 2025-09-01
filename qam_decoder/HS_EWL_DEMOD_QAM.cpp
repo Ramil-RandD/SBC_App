@@ -88,8 +88,8 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
       rxFilter1_not_empty = true;
     }
 
-    Fs = 17520*52;
-    coder::rat(f_est * 52.0 / Fs, &del_re, &Q);
+    //Fs = 17520*52;
+    coder::rat((f_est * 52.0) / Fs, &del_re, &Q);
     if ((!(del_re <= 0.0)) && (!(Q <= 0.0))) {
       creal_T dc;
       double a3;
@@ -225,6 +225,11 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
       rxFilter1.step(b_y1,sig_len, z, z_len);
       dc.re = qam_str->pream_qam_sym; //coder::qammod();
       dc.im = qam_str->pream_qam_sym;
+      if(qam_str->order == 4)
+      {
+          dc.re = -1;
+          dc.im = 1;
+      }
       creal_T del = z[static_cast<int>(round(resamp_len/52))];
       if (del.im == 0.0) {
         if (dc.im == 0.0) {
@@ -289,10 +294,13 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
       uint8_t* pointer_to_inf_byte;
       if(qam_str->order == 256)
         pointer_to_inf_byte = qam_256_demodulator(z, qam_str->qam_sym_per_frame+13, del_re, a3);
-      else
+      else if(qam_str->order == 64)
         pointer_to_inf_byte = qam_64_demodulator(z, qam_str->qam_sym_per_frame+13, del_re, a3);
+      else
+          pointer_to_inf_byte = qam4_qpsk_demodulator(z, qam_str->qam_sym_per_frame+13, del_re, a3);
 
-      for(int i = 0; i < (int)qam_str->inf_byte_amount; i++){
+      for(int i = 0; i < (int)qam_str->inf_byte_amount; i++)
+      {
           byte_data[i] = *(pointer_to_inf_byte+i);
       }
       //get qam diagram symbols
@@ -514,6 +522,96 @@ void qam64_sym_to_bin(const uint8_t *input_bytes, uint8_t *output_bits, uint32_t
         output_bits[n_bit + 2] = (input_bytes[i] >> 3) & 0x1;
         output_bits[n_bit + 1] = (input_bytes[i] >> 4) & 0x1;
         output_bits[n_bit + 0] = (input_bytes[i] >> 5) & 0x1;
+    }
+}
+
+uint8_t* qam4_qpsk_demodulator(creal_T* filt_data, uint16_t len, double re_norm_coef, double im_norm_coef) {
+    double real_testData = 0;
+    double imag_testData = 0;
+    uint8_t rIdx = 0; //real ideal points
+    uint8_t iIdx = 0; //imag ideal points
+    uint8_t start_inf_data = 0;
+    uint8_t mapping[64] = { 0 };
+    uint8_t symbolI[64] = { 0 };
+    uint8_t symbolQ[64] = { 0 };
+    uint8_t data_bin[200*2] = {0};
+
+    uint8_t M = 4; // qam modulation oreder (qam4-4, qam64-64, qam256-256)
+    uint8_t sqrt_M = 2; //sqrt(M)
+    uint8_t table_gray_decode_qpsk[4] = {0x0, 0x1, 0x3, 0x2};
+
+    for (int i = 0; i < len; i++)
+    {
+        real_testData = filt_data[i].re;
+        imag_testData = filt_data[i].im;
+
+        rIdx = round(((real_testData * re_norm_coef - imag_testData * im_norm_coef) + (sqrt_M - 1)) / 2);
+        if (rIdx < 0.0)
+            rIdx = 0.0;
+        if (rIdx > (sqrt_M - 1))
+            rIdx = sqrt_M - 1;
+
+        iIdx = round(((real_testData * im_norm_coef + imag_testData * re_norm_coef) + (sqrt_M - 1)) / 2);
+        if (iIdx < 0.0)
+            iIdx = 0.0;
+        if (iIdx > (sqrt_M - 1))
+            iIdx = sqrt_M - 1;
+
+        demod_qam_data[i] = ((sqrt_M - iIdx) - 1.0) + sqrt_M * rIdx;
+    }
+
+    for (int i = 0; i < M; i++)
+    {
+        symbolI[i] = i >> 1;
+        symbolQ[i] = i & (sqrt_M - 1);
+    }
+
+    for (int i = 1; i < 1; i += i)
+    {
+        for (int j = 0; j < M; j++)
+        {
+            symbolI[j] = (symbolI[j] ^ symbolI[j] >> i);
+            symbolQ[j] = (symbolQ[j] ^ symbolQ[j] >> i);
+        }
+    }
+
+    for (int i = 0; i < M; i++)
+    {
+        mapping[(symbolI[i] << 1) + symbolQ[i]] = i;
+    }
+
+    for (int i = 0; i < len; i++)
+    {
+        demod_qam_data[i] = table_gray_decode_qpsk[demod_qam_data[i]];
+    }
+
+    for (int i = 0; i < 50; i++)
+    {
+        if (demod_qam_data[i] == 0 && demod_qam_data[i + 1] == 0 && demod_qam_data[i + 2] == 0 && demod_qam_data[i + 3] == 0 && demod_qam_data[i + 4] == 0 && demod_qam_data[i + 5] == 3)
+            start_inf_data = i + 6;
+    }
+
+    qam4_qpsk_sym_to_bin(&demod_qam_data[start_inf_data], data_bin, 200);
+
+    if(bin_to_byte(data_bin, data_byte, 200*2))
+    {
+        return &data_byte[0];
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+void qam4_qpsk_sym_to_bin(const uint8_t *input_bytes, uint8_t *output_bits, uint32_t size_bytes)
+{
+    uint32_t n_bit;
+
+    for(uint32_t i = 0; i < size_bytes; ++i)
+    {
+        n_bit = i * 2;
+        output_bits[n_bit + 1] = input_bytes[i] & 0x1;
+        output_bits[n_bit + 0] = (input_bytes[i] >> 1) & 0x1;
     }
 }
 

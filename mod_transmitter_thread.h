@@ -69,6 +69,7 @@ private:
         TX_PREDISTORTION_TABLES_TO_MOD = 14,        // Transmitting 'predistortion tables' to MOD, please wait...
         AGC_START_FOR_MOD_STAT = 15,                // 'Predistortion tables' calculation complete. Starting AGC (automatic gain configuration) for 'MOD get status' signal
         STAT_MOD_COMMANDS_FOR_AGC = 16,             // AGC (automatic gain configuration) for 'MOD get status' signal is in progress
+        SEND_TO_MOD2_RX_PARAMETERS = 17,
 
         AGCCFG_START = 100,                         // AGC auto configuration (separately from 'Auto configuration') started
 
@@ -78,6 +79,9 @@ private:
         SPECIAL_USR_REQ_ADC_START_FOR_SWEEP = 104,
         SPECIAL_USR_REQ_SWEEP_MOD_COMMAND = 105,
 
+        ERROR_MOD2_SEND_RX_PARAMETERS = 245,
+        ERROR_MOD2_AUTO_CFG_STOP = 246,
+        ERROR_MOD2_AUTO_CFG_START = 247,
         ERROR_ANSWER_TIMEOUT = 248,                 // Reserved for MAXIM/Indigo Suite DLL: no answer from SRP2
         ERROR_PREDISTORTION_TABLES_TX_FAILED = 249,     // Errors todo
         ERROR_AGC_MODSTAT = 250,
@@ -115,12 +119,13 @@ private:
     const uint32_t n_MaxAttemptsHighLevel = 3;
     const uint32_t n_MaxContinuousAgcErrors = 10;           // max number of continuous AGC errors
 
-    const uint32_t timeoutAnswer_ms = 2800;
+    const uint32_t timeoutAnswer_ms = 1100;
 
-    const uint32_t timeoutAgcSin35kHzCommands_ms = 2000;     // timeout between SIN 35 kHz transfers for AGC
-    const uint32_t timeoutAgcSweepCommands_ms = 1700;        // timeout between Sweep transfers for AGC
-    const uint32_t timeoutModStatusCommands_ms = 1200;       // timeout between MOD GET STATUS transfers for AGC
+    const uint32_t timeoutAgcSin35kHzCommands_ms = 500;     // timeout between SIN 35 kHz transfers for AGC
+    const uint32_t timeoutAgcSweepCommands_ms = 600;        // timeout between Sweep transfers for AGC
+    const uint32_t timeoutModStatusCommands_ms = 500;       // timeout between MOD GET STATUS transfers for AGC
 
+    const uint32_t n_MaxMod2AutoCfgCommands = 10;           // max number of command that transfers to MOD2 during auto_configuration
     const uint32_t n_MaxSin35kHzCommands = 200;             // max number of SIN 35 kHz transfers for AGC
     const uint32_t n_MaxSweepCommands = 500;                // max number of Sweep transfers for AGC
     const uint32_t n_MaxModStatusCommands = 200;            // max number of MOD STATUS transfers for AGC

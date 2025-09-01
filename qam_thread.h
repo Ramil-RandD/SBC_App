@@ -56,8 +56,8 @@ private:
     } HsEwlReceive_WarningStatus;
 
     // QAM data related sizes & offsets
-    uint32_t TxPacketRsCodesSize = 8*2;//8 for qam64
-    uint32_t TxPacketDataSize = (469 - TxPacketRsCodesSize);//(225 - TxPacketRsCodesSize) - for qam64
+    uint32_t TxPacketRsCodesSize = 8;//8*2 for qam256 double frame//8 for qam64 and qpsk
+    uint32_t TxPacketDataSize = (50 - TxPacketRsCodesSize);//(225 - TxPacketRsCodesSize) - for qam64
 
     bool m_QamDecoderFirstPassFlag = true;
 

@@ -25,8 +25,13 @@ void HS_EWL_DEMOD_QAM_free();
 void HS_EWL_DEMOD_QAM_init();
 
 uint8_t* qam_256_demodulator(creal_T* filt_data, uint16_T len, double re_norm_coef, double im_norm_coef);
+
 uint8_t* qam_64_demodulator(creal_T* filt_data, uint16_t len, double re_norm_coef, double im_norm_coef);
 void qam64_sym_to_bin(const uint8_t *input_bytes, uint8_t *output_bits, uint32_t size_bytes);
+
+uint8_t* qam4_qpsk_demodulator(creal_T* filt_data, uint16_t len, double re_norm_coef, double im_norm_coef);
+void qam4_qpsk_sym_to_bin(const uint8_t *input_bytes, uint8_t *output_bits, uint32_t size_bytes);
+
 bool bin_to_byte(uint8_t *input_bits, uint8_t *output_dec, uint32_t size_bits);
 
 #endif

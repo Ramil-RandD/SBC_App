@@ -46,6 +46,7 @@ void bounds_find(double *data, double len_data, int32_T sps, double *bounds);
 
 double      dist_between_2point(creal_T point1, creal_T point2, creal_T norm_coef);
 double      find_norm_coeff_for_freq(const double *dist_table, const double *freq_table, double distance);
+double      qam4_qpsk_find_norm_coeff_for_freq(const double *dist_table, const double *freq_table, double distance);
 int32_T     premable_from(const double *data, int data_len, int win_len);
 double      find_preamble_max(const double *data, int32_T pre_start, int32_T sps, int32_T pre_len);
 int32_T     cut_out_valid_signal(const double *in_data, double len, double data_max, int32_T pre_start, int32_T pre_end, double *out_data, double *warning);

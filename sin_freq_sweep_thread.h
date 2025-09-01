@@ -25,7 +25,7 @@ private:
     void FreqEstimateForSweep();
     void Sweep();
     bool ConvertToDouble(uint8_t *p_data_in, uint32_t length_in, double *p_data_out, double *p_length);
-    void lagrange_resamp_for_phase_gain(const float *input_buf, uint32_t input_buf_len, float p, float q, float *output_buf);
+    void lagrange_resamp_for_phase_gain(const float *input_buf, float input_buf_len, float p, float q, float *output_buf);
 
     bool m_quit = false;
 

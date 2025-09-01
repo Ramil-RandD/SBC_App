@@ -22,6 +22,10 @@ extern uint8_t SweepDataBuffer[USB_MAX_DATA_SIZE];
 extern uint32_t SinFreqEstDataLength;
 extern uint32_t SweepDataLength;
 extern QElapsedTimer profiler_timer;
+extern bool is_auto_config_work;
+extern bool mod2_auto_cfg_start_answer;
+extern bool mod2_auto_cfg_stop_answer;
+extern bool mod2_set_rx_parameters_answer;
 
 /* Global variables */
 uint8_t UserRxBuffer[USB_MAX_DATA_SIZE];
@@ -560,7 +564,28 @@ void LIBUSB_CALL UsbWorkThread::rx_callback(struct libusb_transfer *transfer)
             {
                 case SRP_LS_DATA:
                     // Retransmit data to PC
-                    emit postTxDataToSerialPort(UserRxBuffer + pStartData + sizeof(USBheader_t), header->packet_length - sizeof(USBheader_t));
+                    if(is_auto_config_work == true)
+                    {
+                        if(UserRxBuffer[pStartData + sizeof(USBheader_t) + 1] == CMessageBox::MOD_AUTO_CFG_START)
+                        {
+                            mod2_auto_cfg_start_answer = true;
+                            break;
+                        }
+                        else if(UserRxBuffer[pStartData + sizeof(USBheader_t) + 1] == CMessageBox::MOD_AUTO_CFG_STOP)
+                        {
+                            mod2_auto_cfg_stop_answer = true;
+                            break;
+                        }
+                        else if(UserRxBuffer[pStartData + sizeof(USBheader_t) + 1] == CMessageBox::SET_RX_PARAMETERS)
+                        {
+                            mod2_set_rx_parameters_answer = true;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        emit postTxDataToSerialPort(UserRxBuffer + pStartData + sizeof(USBheader_t), header->packet_length - sizeof(USBheader_t));
+                    }
                     break;
                 case SRP_HS_DATA_QAM256:
                 case SRP_HS_DATA_QAM64:

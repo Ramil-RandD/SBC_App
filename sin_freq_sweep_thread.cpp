@@ -175,7 +175,7 @@ void SinFreqSweepThread::FreqEstimateForSweep()
 
     peformance_timer.start();
 
-    HS_EWL_FREQ_EST_FOR_SWEEP(sine, sine_len, Fs, 17520, period_amount, Fs/17520,
+    HS_EWL_FREQ_EST_FOR_SWEEP(sine, sine_len, Fs*2, 17520, period_amount, (Fs*2)/17520,
                     &f_opt, &ph_opt, &sweep_freq_warning_status);
 
     int sweep_warning_status_int = int(sweep_freq_warning_status);
@@ -213,7 +213,7 @@ void SinFreqSweepThread::Sweep()
 
     double *sweep = (double*)&SignalSweep;
 
-    HS_EWL_TR_FUN_EST(sweep, math_sweep, Fs, f_opt*2, f_sine, pream_sps,
+    HS_EWL_TR_FUN_EST(sweep, math_sweep, Fs*2, f_opt*2, f_sine, pream_sps,
                      gain_data, phase_data,&shift_for_qam_data,
                      &sweep_warning_status, qam_str);
 
@@ -223,8 +223,8 @@ void SinFreqSweepThread::Sweep()
         gain_data_float[i] = float(gain_data[i]);
         phase_data_float[i] = float(phase_data[i]);
     }
-    lagrange_resamp_for_phase_gain(gain_data_float, 2048/2, 128, 2048/2, gain_resamp_data);
-    lagrange_resamp_for_phase_gain(phase_data_float, 2048/2, 128, 2048/2, phase_resamp_data);
+    lagrange_resamp_for_phase_gain(gain_data_float, 1024.0, 128.0, 1024.0, gain_resamp_data);
+    lagrange_resamp_for_phase_gain(phase_data_float, 1024.0, 128.0, 1024.0, phase_resamp_data);
 
     // Convert 'shift' to uint16_t
     shift_for_qam_data_int = uint16_t(shift_for_qam_data);
@@ -275,7 +275,7 @@ void SinFreqSweepThread::Sweep()
 //                double resamp_data[57820]
 // Return Type  : void
 //
-void SinFreqSweepThread::lagrange_resamp_for_phase_gain(const float *input_buf, uint32_t input_buf_len, float p, float q, float *output_buf)
+void SinFreqSweepThread::lagrange_resamp_for_phase_gain(const float *input_buf, float input_buf_len, float p, float q, float *output_buf)
 {
   double resamp_len;
   int i;
@@ -299,15 +299,15 @@ void SinFreqSweepThread::lagrange_resamp_for_phase_gain(const float *input_buf, 
   {
     resamp_len = std::floor(input_buf_len * p / q);
   }
-  if(resamp_len > p)
+  if(resamp_len > p || resamp_len < p)
   {
       resamp_len = p;
   }
 
-  output_buf[0] = 0.0;
-  output_buf[1] = 0.0;
-  output_buf[(int)resamp_len-2] = 0.0;
-  output_buf[(int)resamp_len-1] = 0.0;
+  //output_buf[0] = 0.0;
+  //output_buf[1] = 0.0;
+  //output_buf[(int)resamp_len-2] = 0.0;
+  //output_buf[(int)resamp_len-1] = 0.0;
 
   i = static_cast<int>(resamp_len);
   for (int k = 0; k < i; k++) {
@@ -326,5 +326,9 @@ void SinFreqSweepThread::lagrange_resamp_for_phase_gain(const float *input_buf, 
     resamp_len = 0.5 * (a3_tmp - resamp_len) - a3;
     output_buf[k] = ((b_a3_tmp - resamp_len * d) + (((a3_tmp - b_a3_tmp) - a3)
       - resamp_len) * d * d) - a3 * d * d * d;
+  }
+  if(output_buf[(int)p-1] == 0)
+  {
+      output_buf[(int)p - 1] = output_buf[(int)p - 2];
   }
 }
