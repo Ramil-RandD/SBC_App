@@ -175,7 +175,7 @@ void SinFreqSweepThread::FreqEstimateForSweep()
 
     peformance_timer.start();
 
-    HS_EWL_FREQ_EST_FOR_SWEEP(sine, sine_len, Fs*2, 17520, period_amount, (Fs*2)/17520,
+    HS_EWL_FREQ_EST_FOR_SWEEP(sine, sine_len, Fs, 17520, period_amount, (Fs)/17520,
                     &f_opt, &ph_opt, &sweep_freq_warning_status);
 
     int sweep_warning_status_int = int(sweep_freq_warning_status);
@@ -213,7 +213,7 @@ void SinFreqSweepThread::Sweep()
 
     double *sweep = (double*)&SignalSweep;
 
-    HS_EWL_TR_FUN_EST(sweep, math_sweep, Fs*2, f_opt*2, f_sine, pream_sps,
+    HS_EWL_TR_FUN_EST(sweep, math_sweep, Fs, f_opt*2, f_sine, pream_sps,
                      gain_data, phase_data,&shift_for_qam_data,
                      &sweep_warning_status, qam_str);
 

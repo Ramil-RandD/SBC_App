@@ -6,7 +6,7 @@
 
 namespace QAM_Common
 {
-    const double Fs = 1832061/2;//280000;//ADC sample rate
+    const double Fs = 1832061;//280000;//ADC sample rate
     //const double f0 = 35000;//carrier freq
 //    double sps = round(Fs/f0);//sample per symbol
     //const double mode = 1;//1-both stages enabled, 0-only sevond stage

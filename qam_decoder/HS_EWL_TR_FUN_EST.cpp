@@ -410,7 +410,7 @@ void HS_EWL_TR_FUN_EST(const double sweep_data[450000], const double sweep_math
           //---- GAIN for predistortion ----//
           // 
           // change b_dv1 array_size from 513 to 1024
-          uint16_t size = qam_str.fft_order;
+          uint16_t size = 4096;//qam_str.fft_order;
           int32_t Fd = 280000;
           double freq_coef = static_cast<double>(Fd) / static_cast<double>(size);
 //          FILE* file;

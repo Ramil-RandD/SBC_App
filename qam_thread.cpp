@@ -214,6 +214,7 @@ void QamThread::QAM_Decoder()
     double resamp_qpsk_signal[29300] = {0};
     int32_T resamp_qpsk_len = (int32_T)Length;
     double len = Length;
+    double sample_rate = Fs;
 
     peformance_timer.start();
 
@@ -222,16 +223,20 @@ void QamThread::QAM_Decoder()
         resamp_qpsk_len = lagrange_reamp(signal, &resamp_qpsk_len, resamp_qpsk_signal, Fs, Fs*2, 1);
         signal = resamp_qpsk_signal;
         len = (double)resamp_qpsk_len;
+        sample_rate = Fs/2;
         f0 = 17510;
         sps = 52;
     }
 
-    HS_EWL_FREQ_ACQ_error_status = HS_EWL_FREQ_ACQ(signal, len, Fs, f0, sps, mode, preamble_len,
+    HS_EWL_FREQ_ACQ_error_status = HS_EWL_FREQ_ACQ(signal, len, sample_rate, f0, sps, mode, preamble_len,
         &qam_str, data, &len_data, (double*)&f_est_data, &warning_status);
-
+    if(f_est_data == 17510)
+    {
+        f_est_data = 17511;
+    }
     if(HS_EWL_FREQ_ACQ_error_status == 0)
     {
-        HS_EWL_DEMOD_QAM_error_status = HS_EWL_DEMOD_QAM(data, len_data, f_est_data, Fs, &qam_str, qam_symbols_real,
+        HS_EWL_DEMOD_QAM_error_status = HS_EWL_DEMOD_QAM(data, len_data, f_est_data, sample_rate, &qam_str, qam_symbols_real,
                     qam_symbols_imag, byte_data, &start_inf_data);
 
         switch(HS_EWL_DEMOD_QAM_error_status)

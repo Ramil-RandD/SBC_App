@@ -81,34 +81,34 @@ void ModTransmitterThread::run()
 
                 is_auto_config_work = true;
 
-                if(mod2_auto_cfg_start_answer == false)
-                {
-                    if(n_commands > n_MaxMod2AutoCfgCommands)
-                    {
-                        emit consolePutData(":: Predistortion auto cfg :: send cmd to mod2 'MOD_AUTO_CFG_START' error: too many 'MOD_AUTO_CFG_START' commands transmitted to MOD and MOD not answered\n", 2);
-                        setState(ERROR_MOD2_AUTO_CFG_START);
-                        n_commands = 0;
-                        calculatePredistortionTablesStop();
-                        break;
-                    }
-                    message.command = CMessageBox::MOD_AUTO_CFG_START;
-                    message.packet_adr = 0;
-                    message.data_len = 0;
-                    message.message_id = 0;//0;
-                    message.master_address = CMessageBox::MOD2_ADDR;
-                    message.own_address = CMessageBox::MASTER_ADDR;
+//                if(mod2_auto_cfg_start_answer == false)
+//                {
+//                    if(n_commands > n_MaxMod2AutoCfgCommands)
+//                    {
+//                        emit consolePutData(":: Predistortion auto cfg :: send cmd to mod2 'MOD_AUTO_CFG_START' error: too many 'MOD_AUTO_CFG_START' commands transmitted to MOD and MOD not answered\n", 2);
+//                        setState(ERROR_MOD2_AUTO_CFG_START);
+//                        n_commands = 0;
+//                        calculatePredistortionTablesStop();
+//                        break;
+//                    }
+//                    message.command = CMessageBox::MOD_AUTO_CFG_START;
+//                    message.packet_adr = 0;
+//                    message.data_len = 0;
+//                    message.message_id = 0;//0;
+//                    message.master_address = CMessageBox::MOD2_ADDR;
+//                    message.own_address = CMessageBox::MASTER_ADDR;
 
-                    uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
-                    emit consolePutData(":: Predistortion auto cfg :: Send 'MOD_AUTO_CFG_START' command to MOD2\n", 2);
-                    postDataToStm32H7(message_box_buffer_mod, tx_len);
-                    n_commands++;
+//                    uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
+//                    emit consolePutData(":: Predistortion auto cfg :: Send 'MOD_AUTO_CFG_START' command to MOD2\n", 2);
+//                    postDataToStm32H7(message_box_buffer_mod, tx_len);
+//                    n_commands++;
 
-                        // Start timeout before next command
-                    emit startAnswerTimeoutTimer(timeoutAnswer_ms);
-                    break;
-                }
-                else
-                {
+//                        // Start timeout before next command
+//                    emit startAnswerTimeoutTimer(timeoutAnswer_ms);
+//                    break;
+//                }
+//                else
+//                {
                     mod2_auto_cfg_start_answer = false;
                     // Send 'AGC start' to STM32
                     emit consolePutData(":: Predistortion auto cfg :: send 'AGC start'\n", 2);
@@ -120,7 +120,7 @@ void ModTransmitterThread::run()
                     setState(SIN35KHZ_MOD_COMMANDS_FOR_AGC);
                     n_commands = 0;
                     AgcStateGlobal = AGC_START;
-                }
+//                }
                 /* fallthrough */
 
             case SIN35KHZ_MOD_COMMANDS_FOR_AGC:
@@ -517,85 +517,86 @@ void ModTransmitterThread::run()
                     // Finishing
                     //setState(AUTOCFG_COMPLETE_SUCCESSFULLY);
                     n_commands = 0;
-                    setState(SEND_TO_MOD2_RX_PARAMETERS);
+                    //setState(SEND_TO_MOD2_RX_PARAMETERS);
+                    setState(AUTOCFG_COMPLETE_SUCCESSFULLY);
                     emit startAnswerTimeoutTimer(100);
                 }
                 break;
 
-             case SEND_TO_MOD2_RX_PARAMETERS:
-                    // Send 'AGC start' to STM32
-                    if(hs_data_received == false)
-                    {
-                        if(n_commands > n_MaxMod2AutoCfgCommands)
-                        {
-                            emit consolePutData(":: Predistortion auto cfg :: tx cmd to mod2 'SEND_TO_MOD2_RX_PARAMETERS' error: too many 'MOD_AUTO_CFG_START' commands transmitted to MOD and MOD not answered\n", 2);
-                            setState(ERROR_MOD2_SEND_RX_PARAMETERS);
-                            calculatePredistortionTablesStop();
-                            break;
-                        }
+//             case SEND_TO_MOD2_RX_PARAMETERS:
+//                    // Send 'AGC start' to STM32
+//                    if(hs_data_received == false)
+//                    {
+//                        if(n_commands > n_MaxMod2AutoCfgCommands)
+//                        {
+//                            emit consolePutData(":: Predistortion auto cfg :: tx cmd to mod2 'SEND_TO_MOD2_RX_PARAMETERS' error: too many 'MOD_AUTO_CFG_START' commands transmitted to MOD and MOD not answered\n", 2);
+//                            setState(ERROR_MOD2_SEND_RX_PARAMETERS);
+//                            calculatePredistortionTablesStop();
+//                            break;
+//                        }
 
-                        // Send 'AGC start' to STM32
-                        emit consolePutData(":: Predistortion auto cfg :: send 'SET RX PARAMETERS' to MOD2\n", 2);
-                        emit sendCommandToSTM32(USB_CMD_SET_RX_PARAMETRS_FOR_MOD, nullptr, 0);
+//                        // Send 'AGC start' to STM32
+//                        emit consolePutData(":: Predistortion auto cfg :: send 'SET RX PARAMETERS' to MOD2\n", 2);
+//                        emit sendCommandToSTM32(USB_CMD_SET_RX_PARAMETRS_FOR_MOD, nullptr, 0);
 
-                        n_commands++;
+//                        n_commands++;
 
-                        // Start timeout before next command
-                        emit startAnswerTimeoutTimer(5000);//timeoutAnswer_ms);
-                        break;
-                    }
-                    else
-                    {
-                        hs_data_received = false;
-                        n_commands = 0;
-                        mod2_set_rx_parameters_answer = false;
-                        emit consolePutData(":: Predistortion auto cfg :: new rx parameters upload to MOD2\n", 2);
-                        setState(AUTOCFG_COMPLETE_SUCCESSFULLY);
-                        //break;
-                    }
+//                        // Start timeout before next command
+//                        emit startAnswerTimeoutTimer(5000);//timeoutAnswer_ms);
+//                        break;
+//                    }
+//                    else
+//                    {
+//                        hs_data_received = false;
+//                        n_commands = 0;
+//                        mod2_set_rx_parameters_answer = false;
+//                        emit consolePutData(":: Predistortion auto cfg :: new rx parameters upload to MOD2\n", 2);
+//                        setState(AUTOCFG_COMPLETE_SUCCESSFULLY);
+//                        //break;
+//                    }
                     /* fallthrough */
              //case STAT_SRP_COMMANDS_FOR_AGC:
 
 
              case AUTOCFG_COMPLETE_SUCCESSFULLY:
 
-                if(hs_data_received == false)
-                {
-                    if(n_commands > n_MaxMod2AutoCfgCommands)
-                    {
-                        emit consolePutData(":: Predistortion auto cfg :: send cmd to mod2 'MOD_AUTO_CFG_STOP' error: too many 'MOD_AUTO_CFG_STOP' commands transmitted to MOD and MOD not answered\n", 2);
-                        setState(ERROR_MOD2_AUTO_CFG_STOP);
-                        n_commands = 0;
-                        calculatePredistortionTablesStop();
-                        break;
-                    }
-                    //message.command = CMessageBox::MOD_AUTO_CFG_STOP;
-                    //message.packet_adr = 0;
-                    //message.data_len = 0;
-                    //message.message_id = 0;//0;
-                    //message.master_address = CMessageBox::MOD2_ADDR;
-                    //message.own_address = CMessageBox::MASTER_ADDR;
-                    message_box_buffer_mod[0] = CMessageBox::MOD2_ADDR;
-                    message_box_buffer_mod[1] = CMessageBox::MASTER_ADDR;
-                    message_box_buffer_mod[2] = CMessageBox::MOD_AUTO_CFG_STOP;
+//                if(hs_data_received == false)
+//                {
+//                    if(n_commands > n_MaxMod2AutoCfgCommands)
+//                    {
+//                        emit consolePutData(":: Predistortion auto cfg :: send cmd to mod2 'MOD_AUTO_CFG_STOP' error: too many 'MOD_AUTO_CFG_STOP' commands transmitted to MOD and MOD not answered\n", 2);
+//                        setState(ERROR_MOD2_AUTO_CFG_STOP);
+//                        n_commands = 0;
+//                        calculatePredistortionTablesStop();
+//                        break;
+//                    }
+//                    //message.command = CMessageBox::MOD_AUTO_CFG_STOP;
+//                    //message.packet_adr = 0;
+//                    //message.data_len = 0;
+//                    //message.message_id = 0;//0;
+//                    //message.master_address = CMessageBox::MOD2_ADDR;
+//                    //message.own_address = CMessageBox::MASTER_ADDR;
+//                    message_box_buffer_mod[0] = CMessageBox::MOD2_ADDR;
+//                    message_box_buffer_mod[1] = CMessageBox::MASTER_ADDR;
+//                    message_box_buffer_mod[2] = CMessageBox::MOD_AUTO_CFG_STOP;
 
-                    uint16_t tx_len = 3;
-                    //uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
-                    emit consolePutData(":: Predistortion auto cfg :: Send 'MOD_AUTO_CFG_STOP' command to MOD2\n", 2);
-                    postDataToStm32H7(message_box_buffer_mod, tx_len);
-                    n_commands++;
+//                    uint16_t tx_len = 3;
+//                    //uint16_t tx_len = CMessageBox::message_header_to_array(&message, message_box_buffer_mod);
+//                    emit consolePutData(":: Predistortion auto cfg :: Send 'MOD_AUTO_CFG_STOP' command to MOD2\n", 2);
+//                    postDataToStm32H7(message_box_buffer_mod, tx_len);
+//                    n_commands++;
 
-                        // Start timeout before next command
-                    emit startAnswerTimeoutTimer(timeoutAnswer_ms);
-                    break;
-                }
-                else
-                {
+//                        // Start timeout before next command
+//                    emit startAnswerTimeoutTimer(timeoutAnswer_ms);
+//                    break;
+//                }
+//                else
+//                {
                     hs_data_received = false;
                     emit consolePutData(":: Predistortion auto cfg :: auto configuration complete, all operations completed successfully\n", 2);
                     calculatePredistortionTablesStop();
                     break;
-                }
+//                }
 
             //====================================================================================================================
 
@@ -892,7 +893,7 @@ void ModTransmitterThread::timeoutAnswer()
 
     m_mutex_mod.lock();
 
-    if(State == IDLE || State == AGC_START_FOR_MOD_STAT)
+    if(State == IDLE)// || State == AGC_START_FOR_MOD_STAT)
     {
         m_mutex_mod.unlock();
         return;
