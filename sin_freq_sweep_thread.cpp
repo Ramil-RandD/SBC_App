@@ -172,10 +172,16 @@ void SinFreqSweepThread::FreqEstimateForSweep()
 
     double *sine = (double*)&SignalSin;
     double sine_len = LengthSin;
+    double sine_freq = f_sine;
+    double sine_spp = sine_sps;
 
     peformance_timer.start();
 
-    HS_EWL_FREQ_EST_FOR_SWEEP(sine, sine_len, Fs, 17520, period_amount, (Fs)/17520,
+
+   sine_freq = sine_freq/2;
+   sine_spp = Fs/sine_freq;
+
+    HS_EWL_FREQ_EST_FOR_SWEEP(sine, sine_len, Fs, sine_freq, period_amount, sine_spp,
                     &f_opt, &ph_opt, &sweep_freq_warning_status);
 
     int sweep_warning_status_int = int(sweep_freq_warning_status);
@@ -185,6 +191,10 @@ void SinFreqSweepThread::FreqEstimateForSweep()
         case 0: // sweep_freq_warning_status = 0;% OK input array
             //emit consolePutData(QString("Sweep freq: OK input array\n"), 2);
             // Save frequency
+            if(qam_str.order != 4)
+            {
+                f_opt = f_opt * 2;
+            }
             f0 = f_opt;
             emit consolePutData(QString("Saving carrier frequency f0 = %1\n").arg(f0), 2);
             break;
@@ -213,7 +223,7 @@ void SinFreqSweepThread::Sweep()
 
     double *sweep = (double*)&SignalSweep;
 
-    HS_EWL_TR_FUN_EST(sweep, math_sweep, Fs, f_opt*2, f_sine, pream_sps,
+    HS_EWL_TR_FUN_EST(sweep, math_sweep, Fs, f_opt, f_sine, pream_sps,
                      gain_data, phase_data,&shift_for_qam_data,
                      &sweep_warning_status, qam_str);
 

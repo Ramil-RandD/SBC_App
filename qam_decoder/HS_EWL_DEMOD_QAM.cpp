@@ -46,7 +46,7 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
     //return 1 input data LEN <= 0
     //return 2 incorrect input sample freq for lagrange_resamp func
     //return 0 OK
-  /*static const double y[105] = { 1.0, 1.1132456, 1.2102575, 1.2896211, 1.3501792,
+  static const double y[105] = { 1.0, 1.1132456, 1.2102575, 1.2896211, 1.3501792,
     1.3910486, 1.4116334, 1.4116334, 1.3910486, 1.3501792, 1.2896211, 1.2102575,
     1.1132456, 1.0, 0.87217220000000006, 0.7316261, 0.5804113, 0.4207328,
     0.2549192, 0.085388000000000019, -0.085388000000000019, -0.2549192,
@@ -59,9 +59,9 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
     0.87217220000000006, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };*/
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 
-  static const double y[105] = {-1.0        , -0.86953222, -0.72588322, -0.57123056, -0.40791864,
+  static const double y_qpsk[105] = {-1.0        , -0.86953222, -0.72588322, -0.57123056, -0.40791864,
        -0.23842308, -0.06531327,  0.10878662,  0.28123741,  0.44942494,
         0.61079963,  0.76291523,  0.90346582,  1.03032078,  1.14155713,
         1.23548863,  1.31069139,  1.3660254 ,  1.40065186,  1.41404587,
@@ -86,6 +86,8 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
   double del_re;
   double x;
   int b_i;
+  double mult_real[18000];
+  double mult_imag[18000];
 //  double intX[265];
 //  unsigned char mapping[256];
 //  signed char symbolI[256];
@@ -117,7 +119,16 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
       int idx;
       int ihi;
       int k;
+      double *ref_sin;
 
+      if(qam_str->order == 4)
+      {
+          ref_sin = (double *)&y_qpsk;
+      }
+      else
+      {
+          ref_sin = (double *)&y;
+      }
       //  Input parameters
       //   s   - input signal vector [N x 1];
       //   p   - p paramter of samplarate conversion
@@ -170,7 +181,7 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
         ihi = 103 - k;
         x = 0.0;
         for (b_i = 0; b_i <= ihi; b_i++) {
-          x += y[b_i] * resamp_signal[k + b_i];
+          x += ref_sin[b_i] * resamp_signal[k + b_i];
         }
 
         c1[k + 104] = x;
@@ -180,7 +191,7 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
         ihi = 103 - k;
         x = 0.0;
         for (b_i = 0; b_i <= ihi; b_i++) {
-          x += y[(k + b_i) + 1] * resamp_signal[b_i];
+          x += ref_sin[(k + b_i) + 1] * resamp_signal[b_i];
         }
 
         c1[103 - k] = x;
@@ -235,6 +246,11 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
         if (ihi + 1 >= 53) {
           ihi = 0;
         }
+      }
+      for(int i = 0; i < 18000; i++)
+      {
+          mult_real[i] = b_y1[i].re;
+          mult_imag[i] = b_y1[i].im;
       }
       int sig_len = (qam_str->qam_sym_per_frame + 15)*52;
       int z_len = qam_str->qam_sym_per_frame + 15;
@@ -323,8 +339,8 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
       for (b_i = 0; b_i < (int)qam_str->qam_sym_per_frame+13; b_i++) {
         b_a3_tmp = z[b_i].re;
         x = z[b_i].im;
-        qam_symbols_real[b_i] = b_a3_tmp * del_re - x * a3;
-        qam_symbols_imag[b_i] = b_a3_tmp * a3 + x * del_re;
+        qam_symbols_real[b_i] = b_a3_tmp;//b_a3_tmp * del_re - x * a3;
+        qam_symbols_imag[b_i] = x;//b_a3_tmp * a3 + x * del_re;
       }
 //      for (k = 0; k < 265; k++) {
 //        b_a3_tmp = z[k + 5].re;

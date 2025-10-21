@@ -34,7 +34,7 @@ static int16_t FrameErrorAdcBuffer[10][USB_MAX_DATA_SIZE];
 //double Fs = 1832061;//280000;//ADC sample rate
 //extern double f_opt;
 double f0 = 35045;          //carrier freq
-double f0_saved = 17523;//35045;    //carrier freq saved for blackbox usage
+double f0_saved = 35045;    //carrier freq saved for blackbox usage
 double sps = round(Fs/f0);  //sample per spreamble_lenymbol
 double mode = 0;            //1-both stages enabled, 0-only sevond stage
 
@@ -225,9 +225,9 @@ void QamThread::QAM_Decoder()
         len = (double)resamp_qpsk_len;
         sample_rate = Fs/2;
         f0 = 17510;
+        f0_saved = 17523;
         sps = 52;
     }
-
     HS_EWL_FREQ_ACQ_error_status = HS_EWL_FREQ_ACQ(signal, len, sample_rate, f0, sps, mode, preamble_len,
         &qam_str, data, &len_data, (double*)&f_est_data, &warning_status);
     if(f_est_data == 17510)
@@ -341,6 +341,8 @@ void QamThread::QAM_Decoder()
 
         if(crc8 == tail->crc8)
         {
+            emit consoleFrameErrorFile(qam_symbols_real, 269, 0);
+            emit consoleFrameErrorFile(qam_symbols_imag, 269, 0);
             crc_statistics_good_crc_received();
 
             crc_error = false;
@@ -480,7 +482,7 @@ void QamThread::QAM_Decoder()
             FrameErrorAdcBuffer[n_error_frame][i] = (int16_t)val;
         }
 
-        emit consoleFrameErrorFile(FrameErrorAdcBuffer[n_error_frame], Length, 0);
+        //emit consoleFrameErrorFile(FrameErrorAdcBuffer[n_error_frame], Length, 0);
 
         if(++n_error_frame == 10)
             n_error_frame = 0;

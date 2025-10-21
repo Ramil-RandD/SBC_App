@@ -283,6 +283,115 @@ void Console::putDataAdcSpecial(const qint16 *p_data, quint32 len, uint8_t type)
     }
 }
 
+void Console::putDataAdcSpecial_test(const double *p_data, quint32 len, uint8_t type)
+{
+    QScopedPointer<QFile> *f;
+    QTextStream *out = nullptr;
+    QString data;
+    bool flush_data_after_write = true;
+
+    switch(type)
+    {
+        default:
+        case 0:
+            f = &m_frameErrorFile;
+
+            if(!(*f)->isOpen())
+                return;
+
+            if((*f)->size() > 100*1024*1024)    // 100 Mb
+                return;
+            out = &outFrameErrorAdc;
+            flush_data_after_write = false;     // do not flush data for frame errors
+
+            data.append(QString("%1 // =================================== Frame #%2, len %3 ===================================\n").arg((int16_t)p_data[0]).arg(n_frame++).arg(len));
+            break;
+
+        case 1:
+            f = &m_sin600File;
+
+            if(!(*f)->isOpen())
+                return;
+
+            if((*f)->size() > 10*1024*1024)     // 10 Mb
+                return;
+            out = &outSin600;
+
+            data.append(QString("// =================================== SIN 600, len %3 ===================================\n").arg(len));
+            break;
+
+        case 2:
+            f = &m_sweepFile;
+
+            if(!(*f)->isOpen())
+                return;
+
+            if((*f)->size() > 10*1024*1024)     // 10 Mb
+                return;
+            out = &outSweep;
+
+            data.append(QString("// =================================== Sweep, len %3 ===================================\n").arg(len));
+            break;
+
+        case 3:
+        {
+            // Check & create folder for 'sweep' records
+            bool res = false;
+
+            if(!QDir(m_SweepSaveDirectory).exists())
+            {
+                res = QDir().mkdir(m_SweepSaveDirectory);
+
+                if(!res)
+                {
+                    putData("Error can't create directory for 'sweep' records '" + m_SweepSaveDirectory + "'\n", 2);
+                    break;
+                }
+            }
+
+            if(!QDir(m_SweepSaveDirectory).isReadable())
+            {
+                putData("Error directory for 'sweep' records is not readable '" + m_SweepSaveDirectory + "'\n", 2);
+                break;
+            }
+
+            QScopedPointer<QFile> m_sweepRecordFile;      // Smart pointer to file
+            m_sweepRecordFile.reset(new QFile(m_SweepSaveDirectory + "/sweep_record_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hh.mm.ss.zzz") + ".txt"));
+            res = m_sweepRecordFile.data()->open(QFile::Append | QFile::Text);
+
+            if(!res)
+            {
+                putData("Error can't write file for 'sweep' records. Wrong directory or root is needed to access '" + m_SweepSaveDirectory + "'\n", 2);
+                m_sweepRecordFile->close();
+                break;
+            }
+
+            outSweepRecords.setDevice(m_sweepRecordFile.data());
+            outSweepRecords << QString("// =================================== Sweep, len %3 ===================================\n").arg(len);
+
+            for(uint64_t i = 1; i < len; ++i)
+                outSweepRecords << QString("%1\n").arg((int16_t)p_data[i]);
+
+            outSweepRecords.flush();
+
+            m_sweepRecordFile->close();
+            return;
+        }
+    }
+
+    for(uint64_t i = 1; i < len; ++i)
+        data.append(QString("%1\n").arg(p_data[i]));
+
+    if(out != nullptr)
+    {
+        *out << data;
+        if(flush_data_after_write)
+        {
+            (*out).flush();       // Clear the buffered data
+        }
+    }
+}
+
 void Console::fileFlush()
 {
     putData("Force log file flush by user\n", 2);

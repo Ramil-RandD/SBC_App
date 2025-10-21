@@ -70,6 +70,7 @@ public:
     void putData(const QString &data, uint8_t priority);
     void putDataAdc(const quint8 *p_data, quint32 size);
     void putDataAdcSpecial(const qint16 *p_data, quint32 len, uint8_t type);
+    void putDataAdcSpecial_test(const double *p_data, quint32 len, uint8_t type);
     void Close();
     void fileFlush();
     void fileOpen();
