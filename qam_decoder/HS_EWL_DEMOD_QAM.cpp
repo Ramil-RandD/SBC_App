@@ -239,7 +239,7 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
 
         // y1(i-Im+1) = resamp_signal(i)*exp(1j*2*pi*f_est*time(i-Im+1))*2;
         x = resamp_signal[static_cast<int>(c_i) - 1];
-        k = static_cast<int>(c_i) - idx + 272;
+        k = static_cast<int>(c_i) - idx + 0;
         b_y1[k].re = x * dv[ihi] * 2.0;
         b_y1[k].im = dv1[ihi] * x * 2.0;
         ihi++;
@@ -339,8 +339,8 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
       for (b_i = 0; b_i < (int)qam_str->qam_sym_per_frame+13; b_i++) {
         b_a3_tmp = z[b_i].re;
         x = z[b_i].im;
-        qam_symbols_real[b_i] = b_a3_tmp;//b_a3_tmp * del_re - x * a3;
-        qam_symbols_imag[b_i] = x;//b_a3_tmp * a3 + x * del_re;
+        qam_symbols_real[b_i] = b_a3_tmp * del_re - x * a3;
+        qam_symbols_imag[b_i] = b_a3_tmp * a3 + x * del_re;
       }
 //      for (k = 0; k < 265; k++) {
 //        b_a3_tmp = z[k + 5].re;
@@ -473,7 +473,9 @@ uint8_t* qam_256_demodulator(creal_T* filt_data, uint16_t len, double re_norm_co
 
     for (int i = 0; i < 50; i++) {
         if (demod_qam_data[i] == 128 && demod_qam_data[i + 1] == 128 && demod_qam_data[i + 2] == 128 && demod_qam_data[i + 3] == 255)
+        {
             start_inf_data = i + 4;
+        }
     }
     return &demod_qam_data[start_inf_data];
 }
@@ -530,7 +532,9 @@ uint8_t* qam_64_demodulator(creal_T* filt_data, uint16_t len, double re_norm_coe
 
     for (int i = 0; i < 50; i++) {
         if (demod_qam_data[i] == 32 && demod_qam_data[i + 1] == 32 && demod_qam_data[i + 2] == 32 && demod_qam_data[i + 3] == 4)
+        {
             start_inf_data = i + 4;
+        }
     }
 
     qam64_sym_to_bin(&demod_qam_data[start_inf_data], data_bin, 300);
@@ -620,7 +624,10 @@ uint8_t* qam4_qpsk_demodulator(creal_T* filt_data, uint16_t len, double re_norm_
     for (int i = 0; i < 50; i++)
     {
         if (demod_qam_data[i] == 0 && demod_qam_data[i + 1] == 0 && demod_qam_data[i + 2] == 0 && demod_qam_data[i + 3] == 0 && demod_qam_data[i + 4] == 0 && demod_qam_data[i + 5] == 3)
+        {
             start_inf_data = i + 6;
+            break;
+        }
     }
 
     qam4_qpsk_sym_to_bin(&demod_qam_data[start_inf_data], data_bin, 200);

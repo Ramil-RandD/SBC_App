@@ -41,6 +41,7 @@ private:
     void run() override;
     void transmitPredistortionTables();
     void calculatePredistortionTablesStop();
+    void calculatePredistortionTablesStop_AGC_STOP();
 
     bool m_quit = false;
 

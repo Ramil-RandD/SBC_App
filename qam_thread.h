@@ -21,7 +21,7 @@ class QamThread : public QThread
 signals:
     void consolePutData(const QString &data, quint8 priority);
     void postTxDataToSerialPort(const uint8_t *p_data, int len);
-    void consoleFrameErrorFile(const double *p_data, quint32 len, quint8 type);
+    void consoleFrameErrorFile(const qint16 *p_data, quint32 len, quint8 type);
 
 public slots:
 

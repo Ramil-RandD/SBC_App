@@ -139,6 +139,7 @@ void QamThread::run()
                     TxPacketRsCodesSize = 8;
                     TxPacketDataSize = 225 - TxPacketRsCodesSize;
                     setFirstPassFlag();
+                    f0 = 35045;
                     break;
 
                 case HS_280_MODE:
@@ -148,6 +149,7 @@ void QamThread::run()
                     TxPacketRsCodesSize = 8*2;
                     TxPacketDataSize = 469 - TxPacketRsCodesSize;
                     setFirstPassFlag();
+                    f0 = 35045;
                     break;
 
                 case HS_QPSK_MODE:
@@ -157,6 +159,7 @@ void QamThread::run()
                     TxPacketRsCodesSize = 8;
                     TxPacketDataSize = 50 - TxPacketRsCodesSize;
                     setFirstPassFlag();
+                    f0 = 17510;
                     break;
 
                 default:
@@ -341,8 +344,8 @@ void QamThread::QAM_Decoder()
 
         if(crc8 == tail->crc8)
         {
-            emit consoleFrameErrorFile(qam_symbols_real, 269, 0);
-            emit consoleFrameErrorFile(qam_symbols_imag, 269, 0);
+            //emit consoleFrameErrorFile(qam_symbols_real, 269, 0);
+            //emit consoleFrameErrorFile(qam_symbols_imag, 269, 0);
             crc_statistics_good_crc_received();
 
             crc_error = false;
@@ -482,7 +485,7 @@ void QamThread::QAM_Decoder()
             FrameErrorAdcBuffer[n_error_frame][i] = (int16_t)val;
         }
 
-        //emit consoleFrameErrorFile(FrameErrorAdcBuffer[n_error_frame], Length, 0);
+        emit consoleFrameErrorFile(FrameErrorAdcBuffer[n_error_frame], Length, 0);
 
         if(++n_error_frame == 10)
             n_error_frame = 0;

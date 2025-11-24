@@ -191,11 +191,16 @@ void SinFreqSweepThread::FreqEstimateForSweep()
         case 0: // sweep_freq_warning_status = 0;% OK input array
             //emit consolePutData(QString("Sweep freq: OK input array\n"), 2);
             // Save frequency
+            f_opt = f_opt * 2;
             if(qam_str.order != 4)
             {
-                f_opt = f_opt * 2;
+                f0 = f_opt;
+
             }
-            f0 = f_opt;
+            else
+            {
+                f0 = f_opt/2;
+            }
             emit consolePutData(QString("Saving carrier frequency f0 = %1\n").arg(f0), 2);
             break;
         case 1:

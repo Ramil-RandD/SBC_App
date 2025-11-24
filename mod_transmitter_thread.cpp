@@ -594,7 +594,8 @@ void ModTransmitterThread::run()
 //                {
                     hs_data_received = false;
                     emit consolePutData(":: Predistortion auto cfg :: auto configuration complete, all operations completed successfully\n", 2);
-                    calculatePredistortionTablesStop();
+                    calculatePredistortionTablesStop_AGC_STOP();
+                    //calculatePredistortionTablesStop();
                     break;
 //                }
 
@@ -1007,6 +1008,43 @@ void ModTransmitterThread::calculatePredistortionTablesStop()
         StateAGC = AgcStateGlobal;
         if(StateAGC == AGC_OK || StateAGC == AGC_STOP)
             break;
+
+        if(!n_retrys)
+        {
+            emit consolePutData(":: Predistortion auto cfg :: error 'AGC stop' failed\n", 2);
+            break;
+        }
+
+        emit consolePutData(":: Predistortion auto cfg :: send 'AGC stop'\n", 2);
+        emit sendCommandToSTM32(USB_CMD_AGC_STOP, nullptr, 0);
+        QThread::msleep(1000);
+        emit sendCommandToSTM32(USB_CMD_GET_STATUS, nullptr, 0);
+        QThread::msleep(1000);
+
+        --n_retrys;
+    }
+
+    StatePredistTx = TX_IDLE;
+    emit consolePutData(":: Predistortion auto cfg :: enable QAM decoder ring buffer\n", 2);
+
+    // Unlock ring buffer for QAM decoder (enable QAM decoder)
+    m_ring->SetActive(true);
+
+    // QAM decoder set first pass flag
+    emit qamDecoderReset();
+
+    is_auto_config_work = false;
+    m_AutoConfigurationMode = false;
+}
+
+// Private
+void ModTransmitterThread::calculatePredistortionTablesStop_AGC_STOP()
+{
+    // Check AGC state, stop AGC if needed
+    uint8_t n_retrys = 2;
+
+    while(1)
+    {
 
         if(!n_retrys)
         {
