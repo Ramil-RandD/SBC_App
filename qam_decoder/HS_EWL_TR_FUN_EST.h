@@ -14,6 +14,9 @@
 #include <cstddef>
 #include <cstdlib>
 
+#define KERNEL_SIZE 7     // для медианного фильтра (должен быть нечётным)
+#define PI 3.14159265358979323846
+
 // Function Declarations
 extern void HS_EWL_TR_FUN_EST(const double sweep_data[450000], const double
   sweep_math[57820], double Fs, double f_opt, double f_sine, double PreSPP,

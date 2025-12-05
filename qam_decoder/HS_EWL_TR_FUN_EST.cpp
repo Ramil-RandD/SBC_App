@@ -31,6 +31,10 @@ static void lagrange_resamp(const double s[450000], double p, double q, double
   x0, double resamp_data[57820]);
 static double rt_hypotd_snf(double u0, double u1);
 
+static int cmp_float(const void *a, const void *b);
+static void median_filter(double *input, double *output, int n);
+static void unwrap_phase(double *input, double *output, int n);
+
 // Function Definitions
 //
 // Input parameters
@@ -118,6 +122,69 @@ static double rt_hypotd_snf(double u0, double u1)
   return y;
 }
 
+// ============================================================
+// Функция сравнения для qsort (используется при поиске медианы)
+// ============================================================
+static int cmp_float(const void *a, const void *b)
+{
+    float fa = *(const float*)a;
+    float fb = *(const float*)b;
+    return (fa > fb) - (fa < fb);
+}
+
+// ============================================================
+// Медианный фильтр
+// ============================================================
+static void median_filter(double *input, double *output, int n)
+{
+    int k = KERNEL_SIZE;
+    int r = k / 2;
+    float window[KERNEL_SIZE];
+
+    for (int i = 0; i < n; i++)
+    {
+        int count = 0;
+
+        // собираем окно
+        for (int j = -r; j <= r; j++)
+        {
+            int idx = i + j;
+            if (idx < 0) idx = 0;
+            if (idx >= n) idx = n - 1;
+            window[count++] = (float)input[idx];
+        }
+
+        // сортируем окно
+        qsort(window, KERNEL_SIZE, sizeof(float), cmp_float);
+
+        // медиана
+        output[i] = (float)window[KERNEL_SIZE / 2];
+    }
+}
+
+// ============================================================
+// Разворачивание фазы (аналог numpy.unwrap)
+// ============================================================
+static void unwrap_phase(double *input, double *output, int n)
+{
+    float two_pi = 2.0f * PI;
+
+    output[0] = input[0];
+    float offset = 0.0f;
+
+    for (int i = 1; i < n; i++)
+    {
+        float diff = (float)input[i] - (float)input[i - 1];
+
+        // если скачок > PI, то его скорее всего нужно развернуть
+        if (diff > PI)
+            offset -= two_pi;
+        else if (diff < -PI)
+            offset += two_pi;
+
+        output[i] = (float)input[i] + offset;
+    }
+}
 //
 // sweep_warning_status   = 0; %input array OK
 // sweep_warning_status   = 1; %input sine singal freq or sample freq equal 0
@@ -358,35 +425,38 @@ void HS_EWL_TR_FUN_EST(const double sweep_data[450000], const double sweep_math
           // com
           // end%com
           //  END SWEEP CODE
-          kd = 2.0;
-          for (i = 0; i < 14000; i++) {
-            bi = newPhase[i + 1];
-            r = bi - newPhase[i];
-            if (r > std::floor((kd - 1.0) * 2.0 * 3.1415926535897931) - 0.7) {
-              if (r > std::floor(kd * 2.0 * 3.1415926535897931) - 0.7) {
-                kd++;
-              }
+          median_filter(newPhase, b_dv, 14001);
+          unwrap_phase(b_dv, newPhase, 14001);
 
-              newPhase[i + 1] = bi - (kd - 1.0) * 2.0 * 3.1415926535897931;
-            } else {
-              newPhase[i + 1] = bi - (kd - 2.0) * 2.0 * 3.1415926535897931;
-            }
-          }
+          // kd = 2.0;
+          // for (i = 0; i < 14000; i++) {
+          //   bi = newPhase[i + 1];
+          //   r = bi - newPhase[i];
+          //   if (r > std::floor((kd - 1.0) * 2.0 * 3.1415926535897931) - 0.7) {
+          //     if (r > std::floor(kd * 2.0 * 3.1415926535897931) - 0.7) {
+          //       kd++;
+          //     }
 
-          for (i = 0; i < 14000; i++) {
-            bi = newPhase[i + 1];
-            r = bi - newPhase[i];
-            if (r < -(std::floor((kd - 1.0) * 2.0 * 3.1415926535897931) - 0.7))
-            {
-              if (r < -(std::floor(kd * 2.0 * 3.1415926535897931) - 0.7)) {
-                kd++;
-              }
+          //     newPhase[i + 1] = bi - (kd - 1.0) * 2.0 * 3.1415926535897931;
+          //   } else {
+          //     newPhase[i + 1] = bi - (kd - 2.0) * 2.0 * 3.1415926535897931;
+          //   }
+          // }
 
-              newPhase[i + 1] = bi + (kd - 1.0) * 2.0 * 3.1415926535897931;
-            } else {
-              newPhase[i + 1] = bi + (kd - 2.0) * 2.0 * 3.1415926535897931;
-            }
-          }
+          // for (i = 0; i < 14000; i++) {
+          //   bi = newPhase[i + 1];
+          //   r = bi - newPhase[i];
+          //   if (r < -(std::floor((kd - 1.0) * 2.0 * 3.1415926535897931) - 0.7))
+          //   {
+          //     if (r < -(std::floor(kd * 2.0 * 3.1415926535897931) - 0.7)) {
+          //       kd++;
+          //     }
+
+          //     newPhase[i + 1] = bi + (kd - 1.0) * 2.0 * 3.1415926535897931;
+          //   } else {
+          //     newPhase[i + 1] = bi + (kd - 2.0) * 2.0 * 3.1415926535897931;
+          //   }
+          // }
 
           ft[0] = -140000.0;
           ft[57819] = 139995.15738498786;
