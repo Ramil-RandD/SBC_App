@@ -26,7 +26,7 @@ extern int HS_EWL_DEMOD_QAM(const double *data, double len_data, double
 void HS_EWL_DEMOD_QAM_free();
 void HS_EWL_DEMOD_QAM_init();
 
-uint8_t* qam_256_demodulator(creal_T* filt_data, uint16_T len, double re_norm_coef, double im_norm_coef);
+//uint8_t* qam_256_demodulator(creal_T* filt_data, uint16_T len, double re_norm_coef, double im_norm_coef);
 
 extern uint8_t* qam_256_demodulator(creal_T* filt_data, uint16_T len, double re_norm_coef, double im_norm_coef);
 void qam256_modulator(uint8_t* input_buf, uint32_t len, creal_T* output_buf);

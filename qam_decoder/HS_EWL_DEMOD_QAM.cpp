@@ -346,15 +346,19 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
       }
       fir_filter(z, 525, channel_resp, qam_sym_ref);
       uint8_t* pointer_to_inf_byte;
+//      if(qam_str->order == 256)
+//        pointer_to_inf_byte = qam_256_demodulator(z, qam_str->qam_sym_per_frame+13, del_re, a3);
+//      else if(qam_str->order == 64)
+//        pointer_to_inf_byte = qam_64_demodulator(z, qam_str->qam_sym_per_frame+13, del_re, a3);
+//      else
+//          pointer_to_inf_byte = qam4_qpsk_demodulator(z, qam_str->qam_sym_per_frame+13, del_re, a3);
       if(qam_str->order == 256)
-        pointer_to_inf_byte = qam_256_demodulator(z, qam_str->qam_sym_per_frame+13, del_re, a3);
+          pointer_to_inf_byte = qam_256_demodulator(&qam_sym_ref[3], qam_str->qam_sym_per_frame+16,1,0);// del_re, a3);
       else if(qam_str->order == 64)
-        pointer_to_inf_byte = qam_64_demodulator(z, qam_str->qam_sym_per_frame+13, del_re, a3);
+          pointer_to_inf_byte = qam_64_demodulator(&qam_sym_ref[3], qam_str->qam_sym_per_frame+16,1,0);// del_re, a3);
       else
-          pointer_to_inf_byte = qam4_qpsk_demodulator(z, qam_str->qam_sym_per_frame+13, del_re, a3);
-        pointer_to_inf_byte = qam_256_demodulator(&qam_sym_ref[3], qam_str->qam_sym_per_frame+16,1,0);// del_re, a3);
-      else
-        pointer_to_inf_byte = qam_64_demodulator(&qam_sym_ref[3], qam_str->qam_sym_per_frame+16,1,0);// del_re, a3);
+          pointer_to_inf_byte = qam4_qpsk_demodulator(z, qam_str->qam_sym_per_frame+13, 1, 0);
+
 
       for(int i = 0; i < (int)qam_str->inf_byte_amount; i++)
       {
