@@ -145,6 +145,43 @@ namespace coder
         }
       }
     }
+    void minimum_for_equalizer(const double x[256], double *ex, int *idx)
+    {
+      double d;
+      int i;
+      int k;
+      boolean_T exitg1;
+      if (!rtIsNaN(x[0])) {
+        *idx = 1;
+      } else {
+        *idx = 0;
+        k = 2;
+        exitg1 = false;
+        while ((!exitg1) && (k < 257)) {
+          if (!rtIsNaN(x[k - 1])) {
+            *idx = k;
+            exitg1 = true;
+          } else {
+            k++;
+          }
+        }
+      }
+
+      if (*idx == 0) {
+        *ex = x[0];
+        *idx = 1;
+      } else {
+        *ex = x[*idx - 1];
+        i = *idx + 1;
+        for (k = i; k < 257; k++) {
+          d = x[k - 1];
+          if (*ex > d) {
+            *ex = d;
+            *idx = k;
+          }
+        }
+      }
+    }
   }
 }
 

@@ -110,15 +110,21 @@ Console::Console(QWidget *parent) :
 #endif
     // Set the adc data file for frame errors
     m_frameErrorFile.reset(new QFile("SBC_Logs/Frame_errors_adc_data_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hh.mm.ss.zzz") + ".txt"));
+    m_equalizedFilterDebug.reset(new QFile("SBC_Logs/equalized_and_raw_qam_symbols_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hh.mm.ss.zzz") + ".txt"));
+    m_FilterCoeffDebug.reset(new QFile("SBC_Logs/equalized_filter_coeff_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hh.mm.ss.zzz") + ".txt"));
     m_sweepFile.reset(new QFile("SBC_Logs/Sweep_adc_data_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hh.mm.ss.zzz") + ".txt"));
     m_sin600File.reset(new QFile("SBC_Logs/Sin600_adc_data_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hh.mm.ss.zzz") + ".txt"));
     // Open the file logging
     m_frameErrorFile.data()->open(QFile::Append | QFile::Text);
+    m_equalizedFilterDebug.data()->open(QFile::Append | QFile::Text);
+    m_FilterCoeffDebug.data()->open(QFile::Append | QFile::Text);
     m_sweepFile.data()->open(QFile::Append | QFile::Text);
     m_sin600File.data()->open(QFile::Append | QFile::Text);
 
     // Open stream file writes
     outFrameErrorAdc.setDevice(m_frameErrorFile.data());
+    outEqalizedFilter.setDevice(m_equalizedFilterDebug.data());
+    outFilterCoeff.setDevice(m_FilterCoeffDebug.data());
     outSweep.setDevice(m_sweepFile.data());
     outSin600.setDevice(m_sin600File.data());
 }
@@ -172,6 +178,76 @@ void Console::putDataAdc(const quint8 *p_data, quint32 size)
 
     if(++n_file >= 20)
         n_file = 0;
+}
+
+void Console::putDataEqualData(const creal_T *p_data, const creal_T *eql_data, quint32 len, uint8_t flag)
+{
+    QScopedPointer<QFile> *f;
+    QTextStream *out = nullptr;
+    QString data;
+    bool flush_data_after_write = true;
+
+    f = &m_equalizedFilterDebug;
+
+    if(!(*f)->isOpen())
+        return;
+
+    if((*f)->size() > 100*1024*1024)    // 100 Mb
+        return;
+    out = &outEqalizedFilter;
+    flush_data_after_write = false;     // do not flush data for frame errors
+
+    if(flag)
+        data.append(QString("// =================================== Frame #%1, with RS CODE ===================================\n").arg(n_frame++));
+    else
+        data.append(QString("// =================================== Frame #%1, with CRC ===================================\n").arg(n_frame++));
+
+    for(uint64_t i = 0; i < len; i++)
+        data.append(QString("%1 %2 %3 %4\n").arg(p_data[i].re).arg(p_data[i].im).arg(eql_data[i].re).arg(eql_data[i].im));
+
+    if(out != nullptr)
+    {
+        *out << data;
+        if(flush_data_after_write)
+        {
+            (*out).flush();       // Clear the buffered data
+        }
+    }
+}
+
+void Console::putDataFilterCoeff(const creal_T *filt_coef_p, quint32 len, uint8_t flag)
+{
+    QScopedPointer<QFile> *f;
+    QTextStream *out = nullptr;
+    QString data;
+    bool flush_data_after_write = true;
+
+    f = &m_FilterCoeffDebug;
+
+    if(!(*f)->isOpen())
+        return;
+
+    if((*f)->size() > 100*1024*1024)    // 100 Mb
+        return;
+    out = &outFilterCoeff;
+    flush_data_after_write = false;     // do not flush data for frame errors
+
+    if(flag)
+        data.append(QString("// =================================== Frame #%1, with RS CODE ===================================\n").arg(n_frame++));
+    else
+        data.append(QString("// =================================== Frame #%1, with CRC ===================================\n").arg(n_frame++));
+
+    for(uint64_t i = 0; i < len; i++)
+        data.append(QString("%1 %2\n").arg(filt_coef_p[i].re).arg(filt_coef_p[i].im));
+
+    if(out != nullptr)
+    {
+        *out << data;
+        if(flush_data_after_write)
+        {
+            (*out).flush();       // Clear the buffered data
+        }
+    }
 }
 
 void Console::putDataAdcSpecial(const qint16 *p_data, quint32 len, uint8_t type)

@@ -119,6 +119,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(&m_usb_thread, &UsbWorkThread::srpModeSet, this, &MainWindow::srpModeSet, Qt::ConnectionType::QueuedConnection);
     connect(&m_qam_thread, &QamThread::consolePutData, this, &MainWindow::consolePutData, Qt::ConnectionType::QueuedConnection);
     connect(&m_qam_thread, &QamThread::consoleFrameErrorFile, this, &MainWindow::consoleDataAdcSpecial, Qt::ConnectionType::QueuedConnection);
+    connect(&m_qam_thread, &QamThread::consoleEqulizedDataFile, this, &MainWindow::consoleDataEqualizFilter, Qt::ConnectionType::QueuedConnection);
+    connect(&m_qam_thread, &QamThread::consoleFilterCoeffDataFile, this, &MainWindow::consoleFilterCoeff, Qt::ConnectionType::QueuedConnection);
     connect(&m_qam_thread, &QamThread::postTxDataToSerialPort, this, &MainWindow::transmitDataSerialPort, Qt::ConnectionType::QueuedConnection);
     connect(&m_freq_sweep_thread, &SinFreqSweepThread::consolePutData, this, &MainWindow::consolePutData, Qt::ConnectionType::QueuedConnection);
     connect(&m_freq_sweep_thread, &SinFreqSweepThread::consolePutAdcDataSpecial, this, &MainWindow::consoleDataAdcSpecial, Qt::ConnectionType::QueuedConnection);
@@ -244,6 +246,22 @@ void MainWindow::consoleDataAdcSpecial_test(const double *p_data, quint32 len, q
         return;
 
     m_console->putDataAdcSpecial_test(p_data, len, type);
+}
+
+void MainWindow::consoleDataEqualizFilter(const creal_T *p_data, const creal_T *eql_data, quint32 len, quint8 flag)
+{
+    if(m_console == nullptr)
+        return;
+
+    m_console->putDataEqualData(p_data, eql_data, len, flag);
+}
+
+void MainWindow::consoleFilterCoeff(const creal_T *p_data, quint32 len, quint8 flag)
+{
+    if(m_console == nullptr)
+        return;
+
+    m_console->putDataFilterCoeff(p_data, len, flag);
 }
 
 bool MainWindow::openSerialPort()

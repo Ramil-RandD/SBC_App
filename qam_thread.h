@@ -22,6 +22,8 @@ signals:
     void consolePutData(const QString &data, quint8 priority);
     void postTxDataToSerialPort(const uint8_t *p_data, int len);
     void consoleFrameErrorFile(const qint16 *p_data, quint32 len, quint8 type);
+    void consoleEqulizedDataFile(const creal_T *p_data, const creal_T *eql_data, quint32 len, quint8 flag);
+    void consoleFilterCoeffDataFile(const creal_T *p_data, quint32 len, quint8 flag);
 
 public slots:
 
@@ -71,6 +73,8 @@ private:
     bool m_ChangeSpeed = false;     // received request-command to change speed (LS\HS QAM64\HS QAM256)
 
     quint8 tmp_buffer[255];
+    creal_T qam_symbols_decoded[525];
+    creal_T qam_symbols_decoded_ref[525];
 
     MedianWindowFilter *m_flt = nullptr;
 };

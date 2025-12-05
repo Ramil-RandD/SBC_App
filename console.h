@@ -56,6 +56,7 @@
 #include <QScopedPointer>
 #include <QTextStream>
 #include <QDateTime>
+#include "qam_decoder/tmwtypes.h"
 
 class Console : public QPlainTextEdit
 {
@@ -71,6 +72,8 @@ public:
     void putDataAdc(const quint8 *p_data, quint32 size);
     void putDataAdcSpecial(const qint16 *p_data, quint32 len, uint8_t type);
     void putDataAdcSpecial_test(const double *p_data, quint32 len, uint8_t type);
+    void putDataEqualData(const creal_T *p_data,const creal_T *eql_data, quint32 len, uint8_t flag);
+    void putDataFilterCoeff(const creal_T *filt_coef_p, quint32 len, uint8_t flag);
     void Close();
     void fileFlush();
     void fileOpen();
@@ -92,12 +95,16 @@ private:
     QScopedPointer<QFile> m_logFile;        // Smart pointer to log file
     QScopedPointer<QFile> m_adcFile[20];    // Smart pointer to received adc data file
     QScopedPointer<QFile> m_frameErrorFile; // Smart pointer to received adc data file (special for frame errors)
+    QScopedPointer<QFile> m_equalizedFilterDebug; // Smart pointer to received adc data file (special for frame errors)
+    QScopedPointer<QFile> m_FilterCoeffDebug;
     QScopedPointer<QFile> m_sweepFile;      // Smart pointer to 'sweep' signal adc data file
     QScopedPointer<QFile> m_sin600File;     // Smart pointer to 'sin 600 periods' signal adc data file
 
     QTextStream out;
     QTextStream outAdc[20];
     QTextStream outFrameErrorAdc;
+    QTextStream outEqalizedFilter;
+    QTextStream outFilterCoeff;
     QTextStream outSweep;
     QTextStream outSin600;
     QTextStream outSweepRecords;

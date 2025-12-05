@@ -19,11 +19,20 @@
 #include <cmath>
 #include <cstring>
 
+
+//static void fir_filter(creal_T* input_buf, uint32_t buf_size, creal_T* filter_coeff, creal_T* output_buf);
 // Variable Definitions
 static coder::comm::RaisedCosineReceiveFilter rxFilter1;
 static boolean_T rxFilter1_not_empty;
 static uint8_t demod_qam_data[525] = {0};
 static uint8_t data_byte[222] = {0};
+const double qam_256_table_real[256] = { -15, -15, -15, -15, -15, -15, -15, -15, -15, -15, -15, -15, -15, -15, -15, -15, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -11, -11, -11, -11, -11, -11, -11, -11, -11, -11, -11, -11, -11, -11, -11, -11, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -7, -7, -7, -7, -7, -7, -7, -7, -7, -7, -7, -7, -7, -7, -7, -7, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+const double qam_256_table_imag[256] = { 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15 };
+const double qam_64_table_real[64] = {-7,-7,-7,-7,-7,-7,-7,-7,-5,-5,-5,-5,-5,-5,-5,-5,-3,-3,-3,-3,-3,-3,-3,-3,-1,-1,-1,-1,-1,-1,-1,-1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 7, 7, 7, 7, 7, 7, 7, 7};
+const double qam_64_table_imag[64] = {7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7};
+
+const uint8_t table_gray_decode[256] = { 0, 1, 3, 2, 7, 6, 4, 5, 15, 14, 12, 13, 8, 9, 11, 10, 16, 17, 19, 18, 23, 22, 20, 21, 31, 30, 28, 29, 24, 25, 27, 26, 48, 49, 51, 50, 55, 54, 52, 53, 63, 62, 60, 61, 56, 57, 59, 58, 32, 33, 35, 34, 39, 38, 36, 37, 47, 46, 44, 45, 40, 41, 43, 42, 112, 113, 115, 114, 119, 118, 116, 117, 127, 126, 124, 125, 120, 121, 123, 122, 96, 97, 99, 98, 103, 102, 100, 101, 111, 110, 108, 109, 104, 105, 107, 106, 64, 65, 67, 66, 71, 70, 68, 69, 79, 78, 76, 77, 72, 73, 75, 74, 80, 81, 83, 82, 87, 86, 84, 85, 95, 94, 92, 93, 88, 89, 91, 90, 240, 241, 243, 242, 247, 246, 244, 245, 255, 254, 252, 253, 248, 249, 251, 250, 224, 225, 227, 226, 231, 230, 228, 229, 239, 238, 236, 237, 232, 233, 235, 234, 192, 193, 195, 194, 199, 198, 196, 197, 207, 206, 204, 205, 200, 201, 203, 202, 208, 209, 211, 210, 215, 214, 212, 213, 223, 222, 220, 221, 216, 217, 219, 218, 128, 129, 131, 130, 135, 134, 132, 133, 143, 142, 140, 141, 136, 137, 139, 138, 144, 145, 147, 146, 151, 150, 148, 149, 159, 158, 156, 157, 152, 153, 155, 154, 176, 177, 179, 178, 183, 182, 180, 181, 191, 190, 188, 189, 184, 185, 187, 186, 160, 161, 163, 162, 167, 166, 164, 165, 175, 174, 172, 173, 168, 169, 171, 170 };
+const uint8_t table_gray_decode_qam64[64] = {0, 1, 3, 2, 7, 6, 4, 5, 8, 9,11,10,15,14,12,13,24,25,27,26,31,30,28,29,16,17,19,18,23,22,20,21,56,57,59,58,63,62,60,61,48,49,51,50,55,54,52,53,32,33,35,34,39,38,36,37,40,41,43,42,47,46,44,45};
 
 // Function Definitions
 //
@@ -38,9 +47,8 @@ static uint8_t data_byte[222] = {0};
 // Return Type  : void
 //
 int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-for qam64 14040-for qam256
-                      double Fs, qam *qam_str, double *qam_symbols_real, double
-                      *qam_symbols_imag, double *byte_data, double//212-for qam256 222-for qam64
-                      *start_inf_data)
+                      double Fs, qam *qam_str, creal_T *qam_symbols, double *byte_data, double//212-for qam256 222-for qam64
+                      *start_inf_data, creal_T *qam_sym_ref, creal_T *channel_resp)
 {
 
     //return 1 input data LEN <= 0
@@ -80,6 +88,7 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
   static creal_T b_y1[27300];//18640
   //static double s[18644];
   creal_T z[525];//350//270
+  //z[b_i].recreal_T tmp_z[525];
   double resamp_signal[27300]={0};//18640
   double c1[209];//has the same size for qam256 and qam64
   double Q;
@@ -92,12 +101,15 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
 //  unsigned char mapping[256];
 //  signed char symbolI[256];
 //  signed char symbolQ[256];
+  uint8_T preamble_end_point[2];
   if (!isInitialized_HS_EWL_DEMOD_QAM) {
     HS_EWL_DEMOD_QAM_initialize();
   }
 
-  std::memset(&qam_symbols_real[0], 0, 525U * sizeof(double));
-  std::memset(&qam_symbols_imag[0], 0, 525U * sizeof(double));
+  std::memset(&qam_symbols[0].re, 0, 525U * sizeof(double));
+  std::memset(&qam_symbols[0].im, 0, 525U * sizeof(double));
+  std::memset(&qam_sym_ref[0].re, 0, 525U * sizeof(double));
+  std::memset(&qam_sym_ref[0].im, 0, 525U * sizeof(double));
   std::memset(&byte_data[0], 0, 222U * sizeof(double));
   *start_inf_data = 1.0;
   if (!(len_data <= 0.0)) {
@@ -323,6 +335,16 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
 //      }
       // posible start QAM-256 demodulate
 
+      //memcpy(tmp_z,z,sizeof(creal_T)*525);
+      creal_T tmp_var;
+      for(int i = 0; i < 525; i++)
+      {
+          tmp_var.re = z[i].re * del_re - z[i].im * a3;
+          tmp_var.im = z[i].re * a3 + z[i].im * del_re;
+          z[i].re = tmp_var.re;
+          z[i].im = tmp_var.im;
+      }
+      fir_filter(z, 525, channel_resp, qam_sym_ref);
       uint8_t* pointer_to_inf_byte;
       if(qam_str->order == 256)
         pointer_to_inf_byte = qam_256_demodulator(z, qam_str->qam_sym_per_frame+13, del_re, a3);
@@ -330,18 +352,48 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
         pointer_to_inf_byte = qam_64_demodulator(z, qam_str->qam_sym_per_frame+13, del_re, a3);
       else
           pointer_to_inf_byte = qam4_qpsk_demodulator(z, qam_str->qam_sym_per_frame+13, del_re, a3);
+        pointer_to_inf_byte = qam_256_demodulator(&qam_sym_ref[3], qam_str->qam_sym_per_frame+16,1,0);// del_re, a3);
+      else
+        pointer_to_inf_byte = qam_64_demodulator(&qam_sym_ref[3], qam_str->qam_sym_per_frame+16,1,0);// del_re, a3);
 
       for(int i = 0; i < (int)qam_str->inf_byte_amount; i++)
       {
           byte_data[i] = *(pointer_to_inf_byte+i);
       }
-      //get qam diagram symbols
-      for (b_i = 0; b_i < (int)qam_str->qam_sym_per_frame+13; b_i++) {
-        b_a3_tmp = z[b_i].re;
-        x = z[b_i].im;
-        qam_symbols_real[b_i] = b_a3_tmp * del_re - x * a3;
-        qam_symbols_imag[b_i] = b_a3_tmp * a3 + x * del_re;
+
+      if(qam_str->order == 256)
+      {
+          preamble_end_point[0] = 128;
+          preamble_end_point[1] = 255;
       }
+      else
+      {
+          preamble_end_point[0] = 32;
+          preamble_end_point[1] = 4;
+      }
+
+      for (int i = 0; i < 50; i++)
+      {
+          if (demod_qam_data[i] == preamble_end_point[0] && demod_qam_data[i + 1] == preamble_end_point[0] && demod_qam_data[i + 2] == preamble_end_point[0] && (demod_qam_data[i + 3] == preamble_end_point[1]))
+              *start_inf_data = i + 4;
+      }
+//      if(tmp_z[(int)*start_inf_data + 5].re == 0 && tmp_z[(int)*start_inf_data + 5].im == 0)
+//      {
+//          tmp_z[5].re = 0;
+//      }
+      //get qam diagram symbols
+      int border_tmp = (int)(((float)qam_str->inf_byte_amount * 8.0)/log2(qam_str->order)) + 3;
+      for (b_i = *start_inf_data; b_i < *start_inf_data + border_tmp; b_i++) {
+        //b_a3_tmp = tmp_z[b_i].re * del_re - tmp_z[b_i].im * a3;
+        //x = tmp_z[b_i].re * a3 + tmp_z[b_i].im * del_re;
+        qam_symbols[b_i - (int)*start_inf_data].re = z[b_i].re;//b_a3_tmp * del_re - x * a3;
+        qam_symbols[b_i - (int)*start_inf_data].im = z[b_i].im;//b_a3_tmp * a3 + x * del_re;
+      }
+
+      if(qam_str->order == 256)
+            qam256_modulator(pointer_to_inf_byte, (int)qam_str->inf_byte_amount + 3, qam_sym_ref);
+      else
+            qam64_modulator(&demod_qam_data[(int)*start_inf_data], border_tmp, qam_sym_ref);
 //      for (k = 0; k < 265; k++) {
 //        b_a3_tmp = z[k + 5].re;
 //        x = z[k + 5].im;
@@ -419,6 +471,40 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
     // error = 1;
     return 1;
   }
+}
+
+static uint8_t graydecode_fast_qam256(uint8_t gray)
+{
+    return table_gray_decode[gray];
+}
+
+void qam256_modulator(uint8_t* input_buf, uint32_t len, creal_T* output_buf)
+{
+    uint8_t gray_num;
+
+    for (uint32_t i = 0; i < len; i++)
+    {
+        gray_num = graydecode_fast_qam256(input_buf[i]);
+        output_buf[i].re = qam_256_table_real[gray_num];
+        output_buf[i].im = qam_256_table_imag[gray_num];
+    }
+}
+
+static uint8_t graydecode_fast_qam64(uint8_t gray)
+{
+    return table_gray_decode_qam64[gray];
+}
+
+void qam64_modulator(uint8_t* input_buf, uint32_t len, creal_T* output_buf)
+{
+    uint8_t gray_num;
+
+    for (uint32_t i = 0; i < len; i++)
+    {
+        gray_num = graydecode_fast_qam64(input_buf[i]);
+        output_buf[i].re = qam_64_table_real[gray_num];
+        output_buf[i].im = qam_64_table_imag[gray_num];
+    }
 }
 
 uint8_t* qam_256_demodulator(creal_T* filt_data, uint16_t len, double re_norm_coef, double im_norm_coef) {
@@ -675,6 +761,55 @@ bool bin_to_byte(uint8_t *input_bits, uint8_t *output_dec, uint32_t size_bits)
     }
 
     return true;
+}
+void fir_filter(const creal_T* input_buf, uint32_t buf_size, creal_T* filter_coeff, creal_T* output_buf)
+{
+    creal_T tapDelayLine[FILTER_SIZE];
+    double ref_re;
+    double ref_im;
+    double dRef_re;
+    double dRef_im;
+
+    std::memset(&tapDelayLine[0], 0, FILTER_SIZE * sizeof(creal_T));
+
+    for (int i = 0; i < (int)buf_size; i++)
+    {
+        for (int idx = 0; idx < FILTER_SIZE - 1; idx++)
+        {
+            tapDelayLine[FILTER_SIZE - 1 - idx] = tapDelayLine[FILTER_SIZE - 2 - idx];
+        }
+        tapDelayLine[0] = input_buf[i];
+
+        output_buf[i].re = 0.0;
+        output_buf[i].im = 0.0;
+        for (int idx = 0; idx < FILTER_SIZE; idx++)
+        {
+            ref_re = filter_coeff[idx].re;
+            ref_im = -filter_coeff[idx].im;
+            dRef_re = tapDelayLine[idx].re;
+            dRef_im = tapDelayLine[idx].im;
+            output_buf[i].re += ref_re * dRef_re - ref_im * dRef_im;
+            output_buf[i].im += ref_re * dRef_im + ref_im * dRef_re;
+        }
+        //output_buf[i].im *= -1;
+    }
+}
+double rmsCalculate(creal_T *input_buf, creal_T *ref_buf, uint32_T buf_size)
+{
+    double rms = 0;
+    double err = 0;
+    double vec = 0;
+
+    for(uint32_T i = 0; i < buf_size; i++)
+    {
+        vec += pow(input_buf[i].re,2) + pow(input_buf[i].im,2);
+        err += pow(input_buf[i].re - ref_buf[i].re,2) + pow(input_buf[i].im - ref_buf[i].im,2);
+    }
+    if(err == 0)
+        err = 1;
+
+    rms = 10*log10(vec/err);
+    return rms;
 }
 //
 // Arguments    : void
