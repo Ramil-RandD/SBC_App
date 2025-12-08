@@ -30,9 +30,12 @@ const double qam_256_table_real[256] = { -15, -15, -15, -15, -15, -15, -15, -15,
 const double qam_256_table_imag[256] = { 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15, 15, 13, 11, 9, 7, 5, 3, 1, -1, -3, -5, -7, -9, -11, -13, -15 };
 const double qam_64_table_real[64] = {-7,-7,-7,-7,-7,-7,-7,-7,-5,-5,-5,-5,-5,-5,-5,-5,-3,-3,-3,-3,-3,-3,-3,-3,-1,-1,-1,-1,-1,-1,-1,-1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 7, 7, 7, 7, 7, 7, 7, 7};
 const double qam_64_table_imag[64] = {7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7, 7, 5, 3, 1,-1,-3,-5,-7};
+const double qpsk_table_real[4] = {-1, -1, 1, 1};
+const double qpsk_table_imag[4] = {1, -1, 1, -1};
 
 const uint8_t table_gray_decode[256] = { 0, 1, 3, 2, 7, 6, 4, 5, 15, 14, 12, 13, 8, 9, 11, 10, 16, 17, 19, 18, 23, 22, 20, 21, 31, 30, 28, 29, 24, 25, 27, 26, 48, 49, 51, 50, 55, 54, 52, 53, 63, 62, 60, 61, 56, 57, 59, 58, 32, 33, 35, 34, 39, 38, 36, 37, 47, 46, 44, 45, 40, 41, 43, 42, 112, 113, 115, 114, 119, 118, 116, 117, 127, 126, 124, 125, 120, 121, 123, 122, 96, 97, 99, 98, 103, 102, 100, 101, 111, 110, 108, 109, 104, 105, 107, 106, 64, 65, 67, 66, 71, 70, 68, 69, 79, 78, 76, 77, 72, 73, 75, 74, 80, 81, 83, 82, 87, 86, 84, 85, 95, 94, 92, 93, 88, 89, 91, 90, 240, 241, 243, 242, 247, 246, 244, 245, 255, 254, 252, 253, 248, 249, 251, 250, 224, 225, 227, 226, 231, 230, 228, 229, 239, 238, 236, 237, 232, 233, 235, 234, 192, 193, 195, 194, 199, 198, 196, 197, 207, 206, 204, 205, 200, 201, 203, 202, 208, 209, 211, 210, 215, 214, 212, 213, 223, 222, 220, 221, 216, 217, 219, 218, 128, 129, 131, 130, 135, 134, 132, 133, 143, 142, 140, 141, 136, 137, 139, 138, 144, 145, 147, 146, 151, 150, 148, 149, 159, 158, 156, 157, 152, 153, 155, 154, 176, 177, 179, 178, 183, 182, 180, 181, 191, 190, 188, 189, 184, 185, 187, 186, 160, 161, 163, 162, 167, 166, 164, 165, 175, 174, 172, 173, 168, 169, 171, 170 };
 const uint8_t table_gray_decode_qam64[64] = {0, 1, 3, 2, 7, 6, 4, 5, 8, 9,11,10,15,14,12,13,24,25,27,26,31,30,28,29,16,17,19,18,23,22,20,21,56,57,59,58,63,62,60,61,48,49,51,50,55,54,52,53,32,33,35,34,39,38,36,37,40,41,43,42,47,46,44,45};
+const uint8_t table_gray_decode_qpsk[4] = {0, 1, 3, 2};
 
 // Function Definitions
 //
@@ -357,7 +360,7 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
       else if(qam_str->order == 64)
           pointer_to_inf_byte = qam_64_demodulator(&qam_sym_ref[3], qam_str->qam_sym_per_frame+16,1,0);// del_re, a3);
       else
-          pointer_to_inf_byte = qam4_qpsk_demodulator(z, qam_str->qam_sym_per_frame+13, 1, 0);
+          pointer_to_inf_byte = qam4_qpsk_demodulator(&qam_sym_ref[3], qam_str->qam_sym_per_frame+13, 1, 0);
 
 
       for(int i = 0; i < (int)qam_str->inf_byte_amount; i++)
@@ -370,16 +373,24 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
           preamble_end_point[0] = 128;
           preamble_end_point[1] = 255;
       }
-      else
+      else if(qam_str->order == 64)
       {
           preamble_end_point[0] = 32;
           preamble_end_point[1] = 4;
       }
+      else
+      {
+          preamble_end_point[0] = 0;
+          preamble_end_point[1] = 3;
+      }
 
       for (int i = 0; i < 50; i++)
       {
-          if (demod_qam_data[i] == preamble_end_point[0] && demod_qam_data[i + 1] == preamble_end_point[0] && demod_qam_data[i + 2] == preamble_end_point[0] && (demod_qam_data[i + 3] == preamble_end_point[1]))
-              *start_inf_data = i + 4;
+          if (demod_qam_data[i] == preamble_end_point[0] && demod_qam_data[i + 1] == preamble_end_point[0] && demod_qam_data[i + 2] == preamble_end_point[0] && demod_qam_data[i + 3] == preamble_end_point[0] && demod_qam_data[i + 4] == preamble_end_point[0] && (demod_qam_data[i + 5] == preamble_end_point[1]))
+          {
+              *start_inf_data = i + 6;
+              break;
+          }
       }
 //      if(tmp_z[(int)*start_inf_data + 5].re == 0 && tmp_z[(int)*start_inf_data + 5].im == 0)
 //      {
@@ -396,8 +407,10 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
 
       if(qam_str->order == 256)
             qam256_modulator(pointer_to_inf_byte, (int)qam_str->inf_byte_amount + 3, qam_sym_ref);
-      else
+      else if(qam_str-> order == 64)
             qam64_modulator(&demod_qam_data[(int)*start_inf_data], border_tmp, qam_sym_ref);
+      else
+          qam4_modulator(&demod_qam_data[(int)*start_inf_data], border_tmp, qam_sym_ref);
 //      for (k = 0; k < 265; k++) {
 //        b_a3_tmp = z[k + 5].re;
 //        x = z[k + 5].im;
@@ -499,6 +512,11 @@ static uint8_t graydecode_fast_qam64(uint8_t gray)
     return table_gray_decode_qam64[gray];
 }
 
+static uint8_t graydecode_fast_qam4(uint8_t gray)
+{
+    return table_gray_decode_qpsk[gray];
+}
+
 void qam64_modulator(uint8_t* input_buf, uint32_t len, creal_T* output_buf)
 {
     uint8_t gray_num;
@@ -508,6 +526,18 @@ void qam64_modulator(uint8_t* input_buf, uint32_t len, creal_T* output_buf)
         gray_num = graydecode_fast_qam64(input_buf[i]);
         output_buf[i].re = qam_64_table_real[gray_num];
         output_buf[i].im = qam_64_table_imag[gray_num];
+    }
+}
+
+void qam4_modulator(uint8_t* input_buf, uint32_t len, creal_T* output_buf)
+{
+    uint8_t gray_num;
+
+    for(uint32_t i = 0; i < len; i++)
+    {
+        gray_num = graydecode_fast_qam4(input_buf[i]);
+        output_buf[i].re = qpsk_table_real[gray_num];
+        output_buf[i].im = qpsk_table_imag[gray_num];
     }
 }
 

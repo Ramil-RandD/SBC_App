@@ -392,8 +392,11 @@ void QamThread::QAM_Decoder()
                 HS_EWL_LineEqualizer(qam_symbols_decoded, (int)(((float)qam_str.inf_byte_amount*8.0)/log2(qam_str.order)) + 3, qam_symbols_decoded_ref, true, equalized_data, chan_resp);
                 if(qam_str.order == 256)
                     pointer_to_equalized_byte = qam_256_demodulator(&equalized_data[3], qam_str.inf_byte_amount, 1, 0);
-                else
+                else if (qam_str.order == 64)
                     pointer_to_equalized_byte = qam_64_demodulator(&equalized_data[3], (int)(((float)qam_str.inf_byte_amount*8.0)/log2(qam_str.order)) + 3, 1, 0);
+                else
+                    pointer_to_equalized_byte = qam4_qpsk_demodulator(&equalized_data[3], (int)(((float)qam_str.inf_byte_amount*8.0)/log2(qam_str.order)) + 3, 1, 0);
+                    //pointer_to_equalized_byte = qam4_qpsk_demodulator(&equalized_data[3], (int)(((float)qam_str.inf_byte_amount*8.0)/log2(qam_str.order)) + 3, 1, 0);
                 crc8_check = calc_crc8(pointer_to_equalized_byte + TxPacketRsCodesSize, TxPacketDataSize - 1);
                 if(crc8_check == tail->crc8)
                     correct_crc_cnt++;
@@ -422,8 +425,12 @@ void QamThread::QAM_Decoder()
                     HS_EWL_LineEqualizer(qam_symbols_decoded, qam_symbols_num + 3, qam_symbols_decoded_ref, true, equalized_data, chan_resp);
                     if(qam_str.order == 256)
                         pointer_to_equalized_byte = qam_256_demodulator(&equalized_data[3], qam_str.inf_byte_amount, 1, 0);
-                    else
+                    else if(qam_str.order == 64)
                         pointer_to_equalized_byte = qam_64_demodulator(&equalized_data[3], qam_symbols_num, 1, 0);
+                    else
+                        pointer_to_equalized_byte = qam4_qpsk_demodulator(&equalized_data[3], qam_symbols_num + 3, 1, 0);
+
+
                     crc8_check = calc_crc8(pointer_to_equalized_byte + TxPacketRsCodesSize, TxPacketDataSize - 1);
 
                     fir_filter(qam_symbols_decoded, qam_symbols_num + 3, chan_resp, equalized_data);
