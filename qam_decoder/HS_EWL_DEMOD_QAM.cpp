@@ -37,6 +37,8 @@ const uint8_t table_gray_decode[256] = { 0, 1, 3, 2, 7, 6, 4, 5, 15, 14, 12, 13,
 const uint8_t table_gray_decode_qam64[64] = {0, 1, 3, 2, 7, 6, 4, 5, 8, 9,11,10,15,14,12,13,24,25,27,26,31,30,28,29,16,17,19,18,23,22,20,21,56,57,59,58,63,62,60,61,48,49,51,50,55,54,52,53,32,33,35,34,39,38,36,37,40,41,43,42,47,46,44,45};
 const uint8_t table_gray_decode_qpsk[4] = {0, 1, 3, 2};
 
+static void smooth(double* in_buf, double* out_buf, int n, int window);
+
 // Function Definitions
 //
 // Arguments    : const double data[14040]
@@ -98,8 +100,10 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
   double del_re;
   double x;
   int b_i;
-  double mult_real[18000];
-  double mult_imag[18000];
+  double filt_real[52*30];
+  double filt_imag[52*30];
+  double filt_real_median[52*30];
+  double filt_imag_median[52*30];
 //  double intX[265];
 //  unsigned char mapping[256];
 //  signed char symbolI[256];
@@ -262,22 +266,33 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
           ihi = 0;
         }
       }
-      for(int i = 0; i < 18000; i++)
-      {
-          mult_real[i] = b_y1[i].re;
-          mult_imag[i] = b_y1[i].im;
-      }
+      // for(int i = 0; i < 18000; i++)
+      // {
+      //     mult_real[i] = b_y1[i].re;
+      //     mult_imag[i] = b_y1[i].im;
+      // }
       int sig_len = (qam_str->qam_sym_per_frame + 15)*52;
       int z_len = qam_str->qam_sym_per_frame + 15;
       rxFilter1.step(b_y1,sig_len, z, z_len);
       dc.re = qam_str->pream_qam_sym; //coder::qammod();
       dc.im = qam_str->pream_qam_sym;
+      creal_T del = z[static_cast<int>(round(resamp_len/52))];
       if(qam_str->order == 4)
       {
           dc.re = -1;
           dc.im = 1;
+          for(int i = 0; i < 5; i++)
+          {
+              del.re += z[10+i].re;
+              del.im += z[10+i].im;
+          }
+          //median_filter_1d_double(filt_real, filt_real_median, 52*30);
+          //median_filter_1d_double(filt_imag, filt_real_median, 52*30);
+
+          del.re = del.re/5;
+          del.im = del.im/5;
       }
-      creal_T del = z[static_cast<int>(round(resamp_len/52))];
+      
       if (del.im == 0.0) {
         if (dc.im == 0.0) {
           del_re = dc.re / del.re;
@@ -771,6 +786,40 @@ void qam4_qpsk_sym_to_bin(const uint8_t *input_bytes, uint8_t *output_bits, uint
         n_bit = i * 2;
         output_bits[n_bit + 1] = input_bytes[i] & 0x1;
         output_bits[n_bit + 0] = (input_bytes[i] >> 1) & 0x1;
+    }
+}
+
+static void smooth(double* in_buf, double* out_buf, int n, int window)
+{
+    int16_t z, k1, k2, hw;
+    double tmp;
+    if (window % 2 == 0) window++;
+    hw = (window - 1) / 2;
+
+
+    //out_buf[0] = out_buf[0];
+    for (int i = 1; i < n; i++) {
+        tmp = 0;
+        if (i < hw) {
+            k1 = 0;
+            k2 = 2 * i;
+            z = k2 + 1;
+        }
+        else if ((i + hw) > (n - 1)) {
+            k1 = i - n + i + 1;
+            k2 = n - 1;
+            z = k2 - k1 + 1;
+        }
+        else {
+            k1 = i - hw;
+            k2 = i + hw;
+            z = window;
+        }
+
+        for (int j = k1; j <= k2; j++) {
+            tmp = tmp + in_buf[j];
+        }
+        out_buf[i] = (tmp / (double)z);
     }
 }
 
