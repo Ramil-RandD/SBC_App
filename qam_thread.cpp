@@ -262,9 +262,10 @@ void QamThread::QAM_Decoder()
     {
         f_est_data = 17511;
     }
+    f_est_data = 17522;
     if(HS_EWL_FREQ_ACQ_error_status == 0)
     {
-        HS_EWL_DEMOD_QAM_error_status = HS_EWL_DEMOD_QAM(data, len_data, f_est_data, sample_rate, &qam_str, qam_symbols,
+        HS_EWL_DEMOD_QAM_error_status = HS_EWL_DEMOD_QAM(signal, len, f_est_data, sample_rate, &qam_str, qam_symbols,
                     byte_data, &start_inf_data, qam_symbols_ref, chan_resp_corrected);
 
         switch(HS_EWL_DEMOD_QAM_error_status)
@@ -587,7 +588,7 @@ void QamThread::QAM_Decoder()
     };
 
     // Save 'error-frames' to file
-    if(crc_error || warning_status != CORRECT)
+    if(crc_error)// || warning_status != CORRECT)
     {
         for(uint32_t i = 0; i < Length; ++i)
         {
