@@ -479,7 +479,14 @@ void QamThread::QAM_Decoder()
 
                         // Transmit decoded data to PC
                         //emit postTxDataToSerialPort((uint8_t*)&data_decoded[n_data_buf][MASTER_ADDR_SIZE], tail_last->len - MASTER_ADDR_SIZE);
-                        emit postTxDataToSerialPort((uint8_t*)&data_decoded[n_data_buf][tail->frame_id * data_size_not_last_frame], data_size_last_frame);
+                        if(tail->frame_id == 0)
+                        {
+                            emit postTxDataToSerialPort((uint8_t*)&data_decoded[n_data_buf][MASTER_ADDR_SIZE], data_size_last_frame - MASTER_ADDR_SIZE);
+                        }
+                        else
+                        {
+                            emit postTxDataToSerialPort((uint8_t*)&data_decoded[n_data_buf][tail->frame_id * data_size_not_last_frame], data_size_last_frame);
+                        }
                         m_qamDecodedDataAvailable = false;  // No data for QAM decoder
                         if(++n_data_buf == N_DATA_DECODED_BUFFERS)
                             n_data_buf = 0;
