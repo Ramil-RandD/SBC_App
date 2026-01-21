@@ -485,7 +485,7 @@ void QamThread::QAM_Decoder()
                         }
                         else
                         {
-                            emit postTxDataToSerialPort((uint8_t*)&data_decoded[n_data_buf][tail->frame_id * data_size_not_last_frame], data_size_last_frame);
+                            emit postTxDataToSerialPort((uint8_t*)&data_decoded[n_data_buf][tail->frame_id * data_size_not_last_frame], tail_last->len - (tail->frame_id * data_size_not_last_frame));
                         }
                         m_qamDecodedDataAvailable = false;  // No data for QAM decoder
                         if(++n_data_buf == N_DATA_DECODED_BUFFERS)
