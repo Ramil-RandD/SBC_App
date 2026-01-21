@@ -481,7 +481,7 @@ void QamThread::QAM_Decoder()
                         //emit postTxDataToSerialPort((uint8_t*)&data_decoded[n_data_buf][MASTER_ADDR_SIZE], tail_last->len - MASTER_ADDR_SIZE);
                         if(tail->frame_id == 0)
                         {
-                            emit postTxDataToSerialPort((uint8_t*)&data_decoded[n_data_buf][MASTER_ADDR_SIZE], data_size_last_frame - MASTER_ADDR_SIZE);
+                            emit postTxDataToSerialPort((uint8_t*)&data_decoded[n_data_buf][MASTER_ADDR_SIZE], tail_last->len - MASTER_ADDR_SIZE);
                         }
                         else
                         {
