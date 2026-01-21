@@ -566,24 +566,29 @@ void LIBUSB_CALL UsbWorkThread::rx_callback(struct libusb_transfer *transfer)
                     // Retransmit data to PC
                     if(is_auto_config_work == true)
                     {
-                        if(UserRxBuffer[pStartData + sizeof(USBheader_t) + 1] == CMessageBox::MOD_AUTO_CFG_START)
-                        {
-                            mod2_auto_cfg_start_answer = true;
-                            break;
-                        }
-                        else if(UserRxBuffer[pStartData + sizeof(USBheader_t) + 1] == CMessageBox::MOD_AUTO_CFG_STOP)
-                        {
-                            mod2_auto_cfg_stop_answer = true;
-                            break;
-                        }
-                        else if(UserRxBuffer[pStartData + sizeof(USBheader_t) + 1] == CMessageBox::SET_RX_PARAMETERS)
-                        {
-                            mod2_set_rx_parameters_answer = true;
-                            break;
-                        }
+//                        if(UserRxBuffer[pStartData + sizeof(USBheader_t) + 1] == CMessageBox::MOD_AUTO_CFG_START)
+//                        {
+//                            mod2_auto_cfg_start_answer = true;
+//                            break;
+//                        }
+//                        else if(UserRxBuffer[pStartData + sizeof(USBheader_t) + 1] == CMessageBox::MOD_AUTO_CFG_STOP)
+//                        {
+//                            mod2_auto_cfg_stop_answer = true;
+//                            break;
+//                        }
+//                        else if(UserRxBuffer[pStartData + sizeof(USBheader_t) + 1] == CMessageBox::SET_RX_PARAMETERS)
+//                        {
+//                            mod2_set_rx_parameters_answer = true;
+//                            break;
+//                        }
                     }
                     else
                     {
+//                        if(UserRxBuffer[pStartData + sizeof(USBheader_t) + 1] == 0xe3)
+//                        {
+//                            mod2_auto_cfg_start_answer = true;
+//                            break;
+//                        }
                         emit postTxDataToSerialPort(UserRxBuffer + pStartData + sizeof(USBheader_t), header->packet_length - sizeof(USBheader_t));
                     }
                     break;

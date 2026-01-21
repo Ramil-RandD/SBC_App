@@ -265,7 +265,7 @@ void QamThread::QAM_Decoder()
     f_est_data = 17522;
     if(HS_EWL_FREQ_ACQ_error_status == 0)
     {
-        HS_EWL_DEMOD_QAM_error_status = HS_EWL_DEMOD_QAM(signal, len, f_est_data, sample_rate, &qam_str, qam_symbols,
+        HS_EWL_DEMOD_QAM_error_status = HS_EWL_DEMOD_QAM(&signal[52*4], len-52*4, f_est_data, sample_rate, &qam_str, qam_symbols,
                     byte_data, &start_inf_data, qam_symbols_ref, chan_resp_corrected);
 
         switch(HS_EWL_DEMOD_QAM_error_status)
@@ -445,7 +445,7 @@ void QamThread::QAM_Decoder()
                         memcpy(backup_channel_response,chan_resp_corrected,sizeof(creal_T)*13);
                         memcpy(chan_resp_corrected,chan_resp,sizeof(creal_T)*13);
                         log_str2.append("Filter coeffitients update______________________________________________\n");
-                        emit consoleFilterCoeffDataFile(chan_resp_corrected, 13, 1);
+                        //emit consoleFilterCoeffDataFile(chan_resp_corrected, 13, 1);
                     }
 
                 }
@@ -597,6 +597,7 @@ void QamThread::QAM_Decoder()
         }
 
         emit consoleFrameErrorFile(FrameErrorAdcBuffer[n_error_frame], Length, 0);
+        emit consoleFilterCoeffDataFile(qam_symbols_decoded, 525, 1);
 
         if(++n_error_frame == 10)
             n_error_frame = 0;
