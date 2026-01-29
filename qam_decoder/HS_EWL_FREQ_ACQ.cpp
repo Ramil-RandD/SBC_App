@@ -774,7 +774,7 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
       b_rxFilter1_not_empty = true;
     }
 
-    int window_len = 11;
+    int window_len = 4;
     pre_from = premable_from(data, len, window_len);
 
     if ((!(pre_from < 0)) && (!(pre_from > 50.0 * sps))) {
@@ -1230,7 +1230,7 @@ int32_T premable_from(const double *data, int data_len, int win_len)
         {
             flag_amp = true;
         }
-        if(count == 4)
+        if(count == 2)
         {
             break;
         }
