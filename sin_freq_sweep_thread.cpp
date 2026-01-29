@@ -347,3 +347,55 @@ void SinFreqSweepThread::lagrange_resamp_for_phase_gain(const float *input_buf, 
       output_buf[(int)p - 1] = output_buf[(int)p - 2];
   }
 }
+
+void SinFreqSweepThread::insertion_sort(double *arr, int n)
+{
+    for (int i = 1; i < n; i++) {
+        double key = arr[i];
+        int j = i - 1;
+
+        while (j >= 0 && arr[j] > key) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
+    }
+}
+
+// Медианный фильтр с произвольным окном
+void SinFreqSweepThread::median_filter(double *input, float *output, int n, int window)
+{
+    if (window % 2 == 0) {
+        //printf("Размер окна должен быть нечётным!\n");
+        return;
+    }
+
+    int half = window / 2;
+    double buf[101];   // максимальный размер окна (можно изменить)
+
+    if (window > 101) {
+        //printf("Слишком большое окно!\n");
+        return;
+    }
+
+    for (int i = 0; i < n; i++) {
+
+        // формируем окно
+        for (int j = 0; j < window; j++) {
+            int idx = i + j - half;
+
+            if (idx < 0)
+                buf[j] = input[0];
+            else if (idx >= n)
+                buf[j] = input[n - 1];
+            else
+                buf[j] = input[idx];
+        }
+
+        // сортируем
+        insertion_sort(buf, window);
+
+        // медиана
+        output[i] = (float)buf[half];
+    }
+}
