@@ -71,6 +71,7 @@ private:
     void USB_StartTransmit();
     void USB_StopReceive();
     void parseHsData();
+    void parseInternalCommData();
     void Default_HsDataParser(uint8_t *p_data);
 
     // Hack to use libusb's 'C'-callback functions in 'C++' project

@@ -562,6 +562,7 @@ void LIBUSB_CALL UsbWorkThread::rx_callback(struct libusb_transfer *transfer)
                     // Retransmit data to PC
                     emit postTxDataToSerialPort(UserRxBuffer + pStartData + sizeof(USBheader_t), header->packet_length - sizeof(USBheader_t));
                     break;
+
                 case SRP_HS_DATA_QAM256:
                 case SRP_HS_DATA_QAM64:
                     parseHsData();
@@ -581,6 +582,10 @@ void LIBUSB_CALL UsbWorkThread::rx_callback(struct libusb_transfer *transfer)
                     }
                     else
                         cnt = 0;
+                    break;
+
+                case SRP_HS_INTERNAL:
+                    parseInternalCommData();
                     break;
             }
 
@@ -1077,6 +1082,40 @@ void UsbWorkThread::parseHsData()
             break;
         }
 
+        // case USB_CMD_SYNCHRO_START:
+        // {
+        //     uint16_t SuspendedTime = (uint16_t(*(p_data + 1)) << 8) | *p_data;
+        //     emit consolePutData(QString("SYNCHRO_START, suspended time %1\n").arg(SuspendedTime), 0);
+
+        //     if(SuspendedTime)
+        //     {
+        //         syncSetSuspendedTimeInProgress(true, SuspendedTime);
+        //         synchro_measure_timer.restart();
+
+        //         // If some data is available (before qam decoding or after qam decoding)
+        //         if(m_qamDecodedDataAvailable || m_ring->DataAvailable())
+        //         {
+        //             // Answer with 'wait' (indigo base protocol answer)
+        //             emit postWaitToSerialPort();
+        //         }
+        //     }
+        // }
+        //     break;
+
+        // case USB_CMD_SYNCHRO_STOP:
+        //     syncSetSuspendedTimeInProgress(false, 0);
+        //     emit consolePutData(QString("SYNCHRO_STOP, elapsed %1\n").arg(synchro_measure_timer.elapsed()), 0);
+        //     break;
+    }
+}
+
+void UsbWorkThread::parseInternalCommData()
+{
+    USBheader_t *header = (USBheader_t*)&UserRxBuffer[pStartData];
+    uint8_t *p_data = (uint8_t*)&UserRxBuffer[pStartData + sizeof(USBheader_t)];
+
+    switch(header->cmd)
+    {
         case USB_CMD_SYNCHRO_START:
         {
             uint16_t SuspendedTime = (uint16_t(*(p_data + 1)) << 8) | *p_data;
@@ -1102,6 +1141,7 @@ void UsbWorkThread::parseHsData()
             emit consolePutData(QString("SYNCHRO_STOP, elapsed %1\n").arg(synchro_measure_timer.elapsed()), 0);
             break;
     }
+
 }
 
 void UsbWorkThread::Default_HsDataParser(uint8_t *p_data)
