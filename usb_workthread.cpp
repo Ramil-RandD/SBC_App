@@ -519,6 +519,7 @@ void LIBUSB_CALL UsbWorkThread::rx_callback(struct libusb_transfer *transfer)
             // Drop previously received data
             UserRxBuffer_len = 0;
             emit consolePutData(QString("Usb receive timeout detected, broken previously received packet\n"), 2);
+            m_qamDecodedDataAvailable = false;
         }
 
         // Protection from UserRxBuffer overflow

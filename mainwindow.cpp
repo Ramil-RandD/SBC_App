@@ -74,6 +74,7 @@ extern QElapsedTimer profiler_timer;
 extern RingBuffer *m_ring;
 extern qint64 elapsed_all_saved;
 extern IndigoBaseProtocolBuilderV1 g_frame_builder;
+extern RingBuffer *m_ring;              // ring data buffer (ADC data) for QAM decoder
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -477,6 +478,9 @@ void MainWindow::readDataSerialPort()
             {
                 m_console->putData("SP Received " + QString::number(length_rx) + " bytes\n", 0);
             }
+
+            m_qamDecodedDataAvailable = false;
+            m_ring->Clear();
 
             TtyUserRxBuffer.append(m_serial->readAll());
             TtyUserRxBuffer_len += length_rx;
