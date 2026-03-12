@@ -797,7 +797,7 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
       int str_pre = 0;
       //bounds[0] = 0;
       //bounds[1] = * len_data - sa;
-      bounds_find(s2, *len_data, sps, bounds);
+      bounds_find(&data[(int)pre_from], *len_data, sps, bounds);
       if(bounds[0] == 0)
       {
           bounds[0] = sps * (Pl - 5);
@@ -971,81 +971,137 @@ void HS_EWL_FREQ_ACQ_init()
 //                const double FF[50]
 // Return Type  : double
 //
-void bounds_find(double *data, double len_data, int32_T sps, double *bounds){
-    int32_T count = 0;
+void bounds_find(const double *data, double len_data, int32_T sps, double *bounds){
     int count_preamble = 0;
     double comp_data;
-    int one_flag = 1;
 
-    int32_T win_for_sps         = 2;
-    int start_pre_len           = 40;
-    int end_pre_len             = 30;
+    int32_t win_for_sps = 7;
+    int start_pre_len = 40;
+    int end_pre_len = 30;
     int effective_start_pre_len = 15;
-    int effective_end_pre_len   = 5;
+    int effective_end_pre_len = 5;
+
+    double smooth_buf_start_pre[40*52] = { 0 };
+    double smooth_buf_end_pre[30 * 52] = { 0 };
+    double smooth_buf_max = 0;
+    double smooth_buf_min = 0;
+
+    uint16_t high_threshold[100] = { 0 };
+    uint16_t low_threshold[100] = { 0 };
+    bool is_high_threshold = false;
+    bool is_low_threshold = false;
+    uint16_t high_threshold_cnt = 0;
+    uint16_t low_threshold_cnt = 0;
+
 
     bounds[0] = 0;
     bounds[1] = len_data - sps * effective_end_pre_len;
 
-    for(int i = 0; i < start_pre_len * sps; i++)
+    smooth(data, smooth_buf_start_pre, start_pre_len * 52, 52);
+    smooth(&data[(int)len_data - end_pre_len * 52 - 1], smooth_buf_end_pre, end_pre_len * 52, 52);
+
+    find_min_max(data, smooth_buf_start_pre, start_pre_len * 52, &smooth_buf_min, &smooth_buf_max);
+
+
+    for (int i = 0; i < start_pre_len * 52; i++)
     {
-        if(data[i] < 0.000001 && data[i] > -0.000001)
-            comp_data = 0;//data[i];
-        else
-            comp_data = data[i]/fabs(data[i]);
-        if(comp_data > 0.9 && one_flag == 1)
+        comp_data = data[i] - smooth_buf_start_pre[i];
+
+        if (comp_data >= smooth_buf_max / 2 && is_high_threshold == false)
         {
-            if(count >= (sps - win_for_sps) && count <= (sps + win_for_sps))
-            {
-                count_preamble++;
-                if(count_preamble == effective_start_pre_len)
-                {
-                    bounds[0] = i+1;
-                    break;
-                }
-            }
-            else
-                count_preamble = 0;
-            one_flag = 0;
-            count = 0;
+            is_high_threshold = true;
+            is_low_threshold = false;
+            high_threshold_cnt++;
         }
-        if(comp_data < -0.9)
-            one_flag = 1;
-        count++;
+        if (comp_data <= smooth_buf_min / 2 && is_low_threshold == false)
+        {
+            is_high_threshold = false;
+            is_low_threshold = true;
+            low_threshold_cnt++;
+        }
+
+        if (is_high_threshold)
+        {
+            high_threshold[high_threshold_cnt - 1]++;
+        }
+        if (is_low_threshold)
+        {
+            low_threshold[low_threshold_cnt - 1]++;
+        }
     }
 
-    one_flag = 1;
+    for (int i = 0; i < high_threshold_cnt; i++)
+    {
+        high_threshold[i] += low_threshold[i];
+
+        if (high_threshold[i] >= (sps - win_for_sps) && high_threshold[i] <= (sps + win_for_sps))
+        {
+            count_preamble++;
+            if (count_preamble == effective_start_pre_len)
+            {
+                bounds[0] = sum_array_elements(high_threshold, i);//(i + 1) * sps;
+                break;
+            }
+        }
+        else
+            count_preamble = 0;
+    }
+
     count_preamble = 0;
-    count = 0;
+    memset(high_threshold, 0, sizeof(uint16_t) * 100);
+    memset(low_threshold, 0, sizeof(uint16_t) * 100);
+    is_high_threshold = false;
+    is_low_threshold = false;
+    high_threshold_cnt = 0;
+    low_threshold_cnt = 0;
 
-    for(int i = 0; i < end_pre_len * sps; i++)
+
+    for (int i = 0; i < end_pre_len * 52; i++)
     {
-        if(data[static_cast<int>(len_data)-i-1] < 0.000001 && data[static_cast<int>(len_data)-i-1] > -0.000001)
-            comp_data = 0;//data[static_cast<int>(len_data)-i-1];
-        else
-            comp_data = data[static_cast<int>(len_data)-i-1]/fabs(data[static_cast<int>(len_data) - i - 1]);
-        if(comp_data > 0.9 && one_flag == 1)
+        comp_data = data[static_cast<int>(len_data) - i - 1] - smooth_buf_end_pre[end_pre_len * 52 - i - 1];
+
+        if (comp_data >= smooth_buf_max / 2 && is_high_threshold == false)
         {
-            if(count >= (sps - win_for_sps) && count <= (sps + win_for_sps))
-            {
-                count_preamble++;
-                if(count_preamble == effective_end_pre_len)
-                {
-                    bounds[1] = static_cast<int>(len_data)-i-1;
-                    break;
-                }
-            }
-            else
-                count_preamble = 0;
-            one_flag = 0;
-            count = 0;
+            is_high_threshold = true;
+            is_low_threshold = false;
+            high_threshold_cnt++;
         }
-        if(comp_data < -0.9)
-            one_flag = 1;
-        count++;
+        if (comp_data <= smooth_buf_min / 2 && is_low_threshold == false)
+        {
+            is_high_threshold = false;
+            is_low_threshold = true;
+            low_threshold_cnt++;
+        }
+
+        if (is_high_threshold)
+        {
+            high_threshold[high_threshold_cnt - 1]++;
+        }
+        if (is_low_threshold)
+        {
+            low_threshold[low_threshold_cnt - 1]++;
+        }
     }
 
-    bounds[0] = round(bounds[0]/sps)*sps;
-    bounds[1] = round(bounds[1]/sps)*sps;
+    for (int i = 0; i < high_threshold_cnt; i++)
+    {
+        high_threshold[i] += low_threshold[i];
+
+        if (high_threshold[i] >= (sps - win_for_sps) && high_threshold[i] <= (sps + win_for_sps))
+        {
+            count_preamble++;
+            if (count_preamble == effective_end_pre_len)
+            {
+                bounds[1] = (len_data) - sum_array_elements(high_threshold, i);//(i + 1) * sps;
+                break;
+            }
+        }
+        else
+            count_preamble = 0;
+    }
+
+    bounds[0] = round(bounds[0] / sps) * sps;
+    bounds[1] = round(bounds[1] / sps) * sps;
 }
 
 double dist_between_2point(creal_T point1, creal_T point2, creal_T norm_coef)
@@ -1210,23 +1266,26 @@ int32_T premable_from(const double *data, int data_len, int win_len)
     double      position[4]     = {0};
     boolean_T   flag_amp        = true;
     int         count           = 0;
+    double      smooth_buf[52 * 40] = { 0 };
+
+    smooth(data, smooth_buf, data_len, 52);
 
     for(int i = 0; i < data_len - win_len; i++)
     {
         for(int j = 0; j < win_len; j++)
         {
-            win_mean += data[j + i];
+            win_mean += data[j + i] - smooth_buf[j + i];
         }
 
         win_mean /= win_len;
 
-        if(win_mean > 7000 && flag_amp == 1)
+        if(win_mean > 2000 && flag_amp == 1)
         {
             count++;
             position[count] = static_cast<double>(i);
             flag_amp = false;
         }
-        if(win_mean < - 7000)
+        if(win_mean < - 2000)
         {
             flag_amp = true;
         }
@@ -1365,6 +1424,40 @@ void pream_mult_ref_exp(double *in_data, int32_T *len, int32_T bound1, int32_T b
       {
         count = 0;
       }
+    }
+}
+
+void smooth(const double* in_buf, double* out_buf, int len, int window)
+{
+    int16_t z, k1, k2, hw;
+    double tmp;
+    if (window % 2 == 0) window++;
+    hw = (window - 1) / 2;
+
+
+    //out_buf[0] = out_buf[0];
+    for (int i = 1; i < len; i++) {
+        tmp = 0;
+        if (i < hw) {
+            k1 = 0;
+            k2 = 2 * i;
+            z = k2 + 1;
+        }
+        else if ((i + hw) > (len - 1)) {
+            k1 = i - len + i + 1;
+            k2 = len - 1;
+            z = k2 - k1 + 1;
+        }
+        else {
+            k1 = i - hw;
+            k2 = i + hw;
+            z = window;
+        }
+
+        for (int j = k1; j <= k2; j++) {
+            tmp = tmp + in_buf[j];
+        }
+        out_buf[i] = (double)(tmp / (double)z);
     }
 }
 

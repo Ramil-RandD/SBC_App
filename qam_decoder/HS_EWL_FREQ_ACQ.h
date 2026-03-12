@@ -41,7 +41,7 @@ extern int  HS_EWL_FREQ_ACQ(const double *data, double len, double Fs,
 void        HS_EWL_FREQ_ACQ_free();
 void        HS_EWL_FREQ_ACQ_init();
 double      absolute_min(double idx, const double FF[50]);
-void bounds_find(double *data, double len_data, int32_T sps, double *bounds);
+void bounds_find(const double *data, double len_data, int32_T sps, double *bounds);
 
 
 double      dist_between_2point(creal_T point1, creal_T point2, creal_T norm_coef);
@@ -53,6 +53,7 @@ int32_T     cut_out_valid_signal(const double *in_data, double len, double data_
 int32_T     lagrange_reamp(double *in_data, int32_T *len, double *out_data, double freq, double Fs, int32_T sps);
 void        pream_mult_ref_exp(double *in_data, int32_T *len, int32_T bound1, int32_T bound2, int str_pre, const double *ref_sin, const double *ref_cos, int32_T sps, creal_T *out_data);
 creal_T     complex_division(creal_T dvd, creal_T dvs);
+void        smooth(const double* in_buf, double* out_buf, int len, int window)
 
 #endif
 
