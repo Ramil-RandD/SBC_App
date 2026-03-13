@@ -1461,6 +1461,32 @@ void smooth(const double* in_buf, double* out_buf, int len, int window)
     }
 }
 
+void find_min_max(double* data, double* smooth_data, int len, double* min, double* max)
+{
+    double var;
+
+    *min = *max = data[0] - smooth_data[0];
+
+    for (int i = 1; i < len; i++)
+    {
+        var = data[i] - smooth_data[i];
+        if (var < *min) *min = var;
+        if (var > *max) *max = var;
+    }
+}
+
+uint32_t sum_array_elements(uint16_t* buf, uint32_t len)
+{
+    uint32_t sum = 0;
+
+    for (int i = 0; i < len; i++)
+    {
+        sum += buf[i];
+    }
+
+    return sum;
+}
+
 creal_T complex_division(creal_T dvd, creal_T dvs)
 {
 //    dc.re = dvd.re;
