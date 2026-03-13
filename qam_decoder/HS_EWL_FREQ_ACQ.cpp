@@ -775,7 +775,7 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
     }
 
     int window_len = 4;
-    pre_from = premable_from(data, len, window_len);
+    pre_from = preamble_from(data, len, window_len);
 
     if ((!(pre_from < 0)) && (!(pre_from > 50.0 * sps))) {
       int32_T bounds1new;
@@ -1260,7 +1260,7 @@ double absolute_min(double idx, const double FF[50])
   return mn_idx;
 }
 
-int32_T premable_from(const double *data, int data_len, int win_len)
+int32_T preamble_from(const double *data, int data_len, int win_len)
 {
     double      win_mean        = 0;
     double      position[4]     = {0};
@@ -1268,9 +1268,9 @@ int32_T premable_from(const double *data, int data_len, int win_len)
     int         count           = 0;
     double      smooth_buf[52 * 40] = { 0 };
 
-    smooth(data, smooth_buf, data_len, 52);
+    smooth(data, smooth_buf, 52*40, 52);
 
-    for(int i = 0; i < data_len - win_len; i++)
+    for(int i = 0; i < 52*40 - win_len; i++)
     {
         for(int j = 0; j < win_len; j++)
         {
