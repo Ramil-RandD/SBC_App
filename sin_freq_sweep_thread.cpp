@@ -238,6 +238,9 @@ void SinFreqSweepThread::Sweep()
         gain_data_float[i] = float(gain_data[i]);
         phase_data_float[i] = float(phase_data[i]);
     }
+
+    median_filter(&gain_data[400], &gain_data_float[400], 2048-400, 71);
+
     lagrange_resamp_for_phase_gain(gain_data_float, 1024.0, 128.0, 1024.0, gain_resamp_data);
     lagrange_resamp_for_phase_gain(phase_data_float, 1024.0, 128.0, 1024.0, phase_resamp_data);
 
