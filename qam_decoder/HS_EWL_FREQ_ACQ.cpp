@@ -797,7 +797,7 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
       int str_pre = 0;
       //bounds[0] = 0;
       //bounds[1] = * len_data - sa;
-      bounds_find(&data[(int)pre_from], *len_data, sps, bounds);
+      bounds_find(&data[(int)pre_from], len, sps, bounds);
       if(bounds[0] == 0)
       {
           bounds[0] = sps * (Pl - 5);
@@ -911,6 +911,10 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
             else
             {
                 *f_est = f_opt - sa;
+            }
+            if(*f_est > 35049)
+            {
+                f_opt = 35045;
             }
         }
         if(qam_str->order == 4)
@@ -1030,16 +1034,21 @@ void bounds_find(const double *data, double len_data, int32_T sps, double *bound
         }
     }
 
-    for (int i = 0; i < high_threshold_cnt; i++)
+    for(int i = 0; i < high_threshold_cnt; i++)
     {
         high_threshold[i] += low_threshold[i];
+    }
+
+    for (int i = 0; i < high_threshold_cnt; i++)
+    {
+        //high_threshold[i] += low_threshold[i];
 
         if (high_threshold[i] >= (sps - win_for_sps) && high_threshold[i] <= (sps + win_for_sps))
         {
             count_preamble++;
             if (count_preamble == effective_start_pre_len)
             {
-                bounds[0] = sum_array_elements(high_threshold, i);//(i + 1) * sps;
+                bounds[0] = sum_array_elements(high_threshold, i) + (start_pre_len * 52 - sum_array_elements(high_threshold, high_threshold_cnt));//(i + 1) * sps;
                 break;
             }
         }
@@ -1083,16 +1092,21 @@ void bounds_find(const double *data, double len_data, int32_T sps, double *bound
         }
     }
 
-    for (int i = 0; i < high_threshold_cnt; i++)
+    for(int i = 0; i < high_threshold_cnt; i++)
     {
         high_threshold[i] += low_threshold[i];
+    }
+
+    for (int i = 0; i < high_threshold_cnt; i++)
+    {
+        //high_threshold[i] += low_threshold[i];
 
         if (high_threshold[i] >= (sps - win_for_sps) && high_threshold[i] <= (sps + win_for_sps))
         {
             count_preamble++;
             if (count_preamble == effective_end_pre_len)
             {
-                bounds[1] = (len_data) - sum_array_elements(high_threshold, i);//(i + 1) * sps;
+                bounds[1] = (len_data) - sum_array_elements(high_threshold, i) - (end_pre_len * 52 - sum_array_elements(high_threshold, high_threshold_cnt));//(i + 1) * sps;
                 break;
             }
         }
@@ -1412,9 +1426,9 @@ void pream_mult_ref_exp(double *in_data, int32_T *len, int32_T bound1, int32_T b
     }
 
     count = 0;
-    int32_T b_i = (*len + 52*5) - bound2;
+    int32_T b_i = (*len) - bound2;
     if(b_i + bound1 > 2392)
-        b_i = b_i - (2392 - (b_i + bound1));
+        b_i = b_i - ((b_i + bound1) - 2392);
     for (int32_T i = 0; i < b_i; i++)
     {
       out_data[bound1 + i].re = in_data[bound2 + i] * ref_cos[count] * 2.0;
@@ -1461,7 +1475,7 @@ void smooth(const double* in_buf, double* out_buf, int len, int window)
     }
 }
 
-void find_min_max(double* data, double* smooth_data, int len, double* min, double* max)
+void find_min_max(const double* data, double* smooth_data, int len, double* min, double* max)
 {
     double var;
 

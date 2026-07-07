@@ -55,7 +55,7 @@ void        pream_mult_ref_exp(double *in_data, int32_T *len, int32_T bound1, in
 creal_T     complex_division(creal_T dvd, creal_T dvs);
 void        smooth(const double* in_buf, double* out_buf, int len, int window);
 uint32_t    sum_array_elements(uint16_t* buf, uint32_t len);
-void        find_min_max(double* data, double* smooth_data, int len, double* min, double* max);
+void        find_min_max(const double* data, double* smooth_data, int len, double* min, double* max);
 
 #endif
 
