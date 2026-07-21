@@ -276,22 +276,25 @@ int HS_EWL_DEMOD_QAM(const double *data, double len_data, double f_est,//18460-f
       rxFilter1.step(b_y1,sig_len, z, z_len);
       dc.re = qam_str->pream_qam_sym; //coder::qammod();
       dc.im = qam_str->pream_qam_sym;
-      creal_T del = z[static_cast<int>(round(resamp_len/52))];
+      creal_T del; //z[10];//z[static_cast<int>(round(resamp_len/52))];
+      del.re = 0;
+      del.im = 0;
       if(qam_str->order == 4)
       {
           dc.re = -1;
           dc.im = 1;
-          for(int i = 0; i < 5; i++)
-          {
-              del.re += z[10+i].re;
-              del.im += z[10+i].im;
-          }
-          //median_filter_1d_double(filt_real, filt_real_median, 52*30);
-          //median_filter_1d_double(filt_imag, filt_real_median, 52*30);
-
-          del.re = del.re/5;
-          del.im = del.im/5;
       }
+
+      for(int i = 0; i < 5; i++)
+      {
+          del.re += z[10+i].re;
+          del.im += z[10+i].im;
+      }
+      //median_filter_1d_double(filt_real, filt_real_median, 52*30);
+      //median_filter_1d_double(filt_imag, filt_real_median, 52*30);
+
+      del.re = del.re/5;
+      del.im = del.im/5;
       
       if (del.im == 0.0) {
         if (dc.im == 0.0) {

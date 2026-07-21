@@ -761,6 +761,7 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
   if (!(len <= 0.0)) {
     //double dist_between_2point(creal_T point1, creal_T point2, creal_T norm_coeff)
     double     pre_from;
+    double     zeros_after_end_preambul;
     int32_T     pre_to;
 
     if (rt_roundd_snf(len / sps) < (qam_str->qam_sym_per_frame - 10))
@@ -776,6 +777,7 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
 
     int window_len = 4;
     pre_from = preamble_from(data, len, window_len);
+    zeros_after_end_preambul = preamble_end_zeros(data, len, window_len);
 
     if ((!(pre_from < 0)) && (!(pre_from > 50.0 * sps))) {
       int32_T bounds1new;
@@ -786,29 +788,39 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
       signal_max = find_preamble_max(data, pre_from, sps, Pl);
       //resamp_len = lagrange_reamp(s2, len_data, testSignal, f_opt, Fs, sps);
 
-      // find preamble end
-      pre_to = pre_from + sps * (qam_str->qam_sym_per_frame - 2.0);
 
-      *len_data = cut_out_valid_signal(data, len, signal_max, pre_from, pre_to, s2, warningStatus);
-
-      // get bounds for processing
-      //sa = sps * (Pl-15);//sps * ((Pl-10) - 2.0);
-      //bounds[0] = sps * (Pl - 5);//sps * ((Pl - 10) - 2.0);
-      int str_pre = 0;
-      //bounds[0] = 0;
-      //bounds[1] = * len_data - sa;
-      bounds_find(&data[(int)pre_from], len, sps, bounds);
-      if(bounds[0] == 0)
+      if(zeros_after_end_preambul > 12*sps)
       {
-          bounds[0] = sps * (Pl - 5);
-          str_pre = 0;
+          pre_from = 0;
+          pre_to = len - zeros_after_end_preambul;
       }
       else
       {
-          str_pre = bounds[0] - 15*sps;
+      // find preamble end
+      pre_to = pre_from + sps * (qam_str->qam_sym_per_frame - 2);
       }
+
+      *len_data = cut_out_valid_signal(data, len, signal_max, pre_from, pre_to, s2, warningStatus);
+
+      *len_data = round((*len_data)/sps)*sps;
+      // get bounds for processing
+      sa = sps * (Pl-10);//sps * ((Pl-10) - 2.0);
+      bounds[0] = sps * (Pl);//sps * ((Pl - 10) - 2.0);
+      int str_pre = 0;
+      //bounds[0] = 0;
+      bounds[1] = * len_data - sa;
+//      bounds_find(&data[(int)pre_from], len, sps, bounds);
+//      if(bounds[0] == 0)
+//      {
+//          bounds[0] = sps * (Pl - 5);
+//          str_pre = 0;
+//      }
+//      else
+//      {
+//          str_pre = bounds[0] - 15*sps;
+//      }
       //bounds[1] = round(bounds[1]/52)*52;
-      *len_data = bounds[1]+5*sps;
+      //*len_data = bounds[1]+5*sps;
 
       // stage 1 freq estimation
       if (mode == 1.0)
@@ -832,7 +844,7 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
 
         std::memset(&only_pream_filt[0], 0, 2392U * sizeof(creal_T));
         bounds1new = static_cast<int>(bounds[0]) - str_pre;
-        bounds2new = static_cast<int>(bounds[1]) - sps * 6;
+        bounds2new = static_cast<int>(bounds[1]);
         pream_mult_ref_exp(testSignal, len_data, bounds1new, bounds2new, str_pre, dv1, dv, sps, only_pream_filt);
 
 
@@ -841,7 +853,7 @@ int HS_EWL_FREQ_ACQ(const double *data, double len, double Fs, double
         int32_T filter_span = 5;
         int32_T startPream;
         int32_T endPream;
-        startPream = filter_span + static_cast<int>(round(15/2));//rt_roundd_snf(bounds1new / (sps * 2.0));
+        startPream = filter_span + static_cast<int>(round(20/2));//rt_roundd_snf(bounds1new / (sps * 2.0));
         endPream = filter_span + rt_roundd_snf(bounds1new/sps) + rt_roundd_snf((resamp_len - bounds2new)/(sps * 2));//+15+13;//(bounds1new / sps + 5.0) + rt_roundd_snf((x * sps - bounds2new) / (sps * 2.0));
 
         if(endPream >= 50)
@@ -1289,6 +1301,53 @@ int32_T preamble_from(const double *data, int data_len, int win_len)
         for(int j = 0; j < win_len; j++)
         {
             win_mean += data[j + i] - smooth_buf[j + i];
+        }
+
+        win_mean /= win_len;
+
+        if(win_mean > 2000 && flag_amp == 1)
+        {
+            count++;
+            position[count] = static_cast<double>(i);
+            flag_amp = false;
+        }
+        if(win_mean < - 2000)
+        {
+            flag_amp = true;
+        }
+        if(count == 2)
+        {
+            break;
+        }
+    }
+
+
+    if(count > 0)
+    {
+        return position[count];
+    }
+    else
+    {
+        return -1.0;
+    }
+
+}
+
+int32_T preamble_end_zeros(const double *data, int data_len, int win_len)
+{
+    double      win_mean        = 0;
+    double      position[4]     = {0};
+    boolean_T   flag_amp        = true;
+    int         count           = 0;
+    double      smooth_buf[52 * 40] = { 0 };
+
+    smooth(&data[(data_len-1) - 52*40], smooth_buf, 52*40, 52);
+
+    for(int i = 0; i < 52*40 - win_len; i++)
+    {
+        for(int j = 0; j < win_len; j++)
+        {
+            win_mean += data[(data_len - 1) - (j + i)] - smooth_buf[(data_len - 1) - (j + i)];
         }
 
         win_mean /= win_len;
