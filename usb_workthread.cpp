@@ -1131,7 +1131,7 @@ void UsbWorkThread::parseInternalCommData()
                 if(m_qamDecodedDataAvailable || m_ring->DataAvailable())
                 {
                     // Answer with 'wait' (indigo base protocol answer)
-                    //emit postWaitToSerialPort();
+                    emit postWaitToSerialPort();
                 }
             }
         }
